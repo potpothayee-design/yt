@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import secrets
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -45,3 +47,35 @@ def login(body: LoginRequest, db: Session = Depends(get_db)) -> TokenResponse:
 @router.get("/me", response_model=UserOut)
 def me(user: User = Depends(get_current_user)) -> UserOut:
     return UserOut.model_validate(user)
+
+
+DEV_LOGIN_EMAIL = "dev@studio.app"  # not a reserved/special-use name; passes EmailStr
+
+
+@router.post("/dev-login", response_model=TokenResponse)
+def dev_login(db: Session = Depends(get_db)) -> TokenResponse:
+    """One-click passwordless login for local development.
+
+    Enabled only in ephemeral dev mode (no SECRET_KEY configured) unless a
+    deployment explicitly sets ALLOW_DEV_LOGIN=true. Auto-creates a local
+    "Local Dev" user so a fresh install is usable in one click. Regular
+    email/password auth is unaffected.
+    """
+    settings = get_settings()
+    if not settings.dev_login_enabled:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "dev login is disabled on this server")
+    user = db.query(User).filter(User.email == DEV_LOGIN_EMAIL).first()
+    if not user:
+        first_user = db.query(User).count() == 0
+        user = User(
+            email=DEV_LOGIN_EMAIL,
+            name="Local Dev",
+            hashed_password=hash_password(secrets.token_urlsafe(24)),
+            is_admin=first_user and settings.FIRST_USER_IS_ADMIN,
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        log_event(db, "INFO", "local dev user auto-created (passwordless login)",
+                  context={"user_id": user.id})
+    return TokenResponse(access_token=create_access_token(str(user.id)))

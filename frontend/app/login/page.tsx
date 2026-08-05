@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
-import { ApiError } from "@/lib/api";
+import { api, ApiError } from "@/lib/api";
 import { Spinner } from "@/components/ui";
 
 export default function LoginPage() {
-  const { login, register } = useAuth();
+  const { login, register, devLogin } = useAuth();
   const router = useRouter();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
@@ -15,6 +15,14 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [devAvailable, setDevAvailable] = useState(false);
+
+  useEffect(() => {
+    api
+      .get<{ dev_login?: boolean }>("/api/v1/health")
+      .then((h) => setDevAvailable(Boolean(h.dev_login)))
+      .catch(() => setDevAvailable(false));
+  }, []);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,6 +34,19 @@ export default function LoginPage() {
       router.replace("/");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "something went wrong");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const devSignIn = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await devLogin();
+      router.replace("/");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "dev sign-in is disabled on this server");
     } finally {
       setBusy(false);
     }
@@ -89,6 +110,27 @@ export default function LoginPage() {
             {mode === "login" ? "Sign in" : "Create account"}
           </button>
         </form>
+        {devAvailable && mode === "login" && (
+          <div className="mt-4">
+            <div className="flex items-center gap-3 text-xs text-slate-400">
+              <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+              or
+              <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+            </div>
+            <button
+              type="button"
+              onClick={devSignIn}
+              disabled={busy}
+              className="btn-secondary mt-3 w-full"
+            >
+              {busy ? <Spinner /> : null}
+              ⚡ Continue as local dev — no email or password
+            </button>
+            <p className="mt-2 text-center text-xs text-slate-400">
+              one-click sign-in for local installs
+            </p>
+          </div>
+        )}
         <p className="mt-4 text-center text-sm text-slate-500 dark:text-slate-400">
           {mode === "login" ? "New to the studio?" : "Already have an account?"}{" "}
           <button

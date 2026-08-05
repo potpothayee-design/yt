@@ -16,11 +16,13 @@ router = APIRouter(tags=["meta"])
 
 @router.get("/health")
 def health() -> dict:
+    settings = get_settings()
     return {
         "ok": True,
-        "app": get_settings().APP_NAME,
-        "version": get_settings().APP_VERSION,
+        "app": settings.APP_NAME,
+        "version": settings.APP_VERSION,
         "ffmpeg": ffmpeg_version(),
+        "dev_login": settings.dev_login_enabled,
     }
 
 

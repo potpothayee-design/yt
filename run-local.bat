@@ -54,14 +54,11 @@ if not exist frontend\node_modules (
   echo        already installed - skipping
 )
 
-echo  [3/4] Building the frontend (first run takes about a minute)...
-if not exist frontend\.next (
-  pushd frontend
-  call npm run build
-  popd
-) else (
-  echo        already built - skipping
-)
+echo  [3/4] Building the frontend (takes about a minute)...
+rem  Always rebuild so `git pull` updates are picked up automatically.
+pushd frontend
+call npm run build
+popd
 
 echo  [4/4] Starting servers - keep the two new windows open while you work.
 start "Studio API (keep open)" cmd /k "cd /d %~dp0backend && .venv\Scripts\python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 8000"

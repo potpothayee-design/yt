@@ -22,8 +22,8 @@ backend/.venv/bin/pip install -q -r backend/requirements.txt
 echo "[2/4] Frontend dependencies..."
 [ -d frontend/node_modules ] || (cd frontend && npm ci --no-audit --no-fund)
 
-echo "[3/4] Building frontend..."
-[ -d frontend/.next ] || (cd frontend && npm run build)
+echo "[3/4] Building frontend (always, so git-pull updates are picked up)..."
+(cd frontend && npm run build)
 
 echo "[4/4] Starting servers..."
 (backend/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 > /tmp/studio-api.log 2>&1 &)

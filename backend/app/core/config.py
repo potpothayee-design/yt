@@ -31,6 +31,10 @@ class Settings(BaseSettings):
     # In dev we auto-generate an ephemeral key if none is provided, but we log
     # a loud warning. Production MUST set SECRET_KEY explicitly.
     SECRET_KEY: str = ""
+    # Passwordless one-click dev login ("Continue as local dev" button).
+    # None = auto: enabled ONLY in ephemeral dev mode (no SECRET_KEY set),
+    # i.e. never in production unless ALLOW_DEV_LOGIN=true is set explicitly.
+    ALLOW_DEV_LOGIN: bool | None = None
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 12
     FIRST_USER_IS_ADMIN: bool = True
 
@@ -105,6 +109,13 @@ class Settings(BaseSettings):
         """Generate an ephemeral development key when none is configured."""
         if not self.SECRET_KEY:
             self.SECRET_KEY = "dev-" + secrets.token_hex(32)
+
+    @property
+    def dev_login_enabled(self) -> bool:
+        """Passwordless dev login: explicit setting wins, else dev-mode only."""
+        if self.ALLOW_DEV_LOGIN is not None:
+            return self.ALLOW_DEV_LOGIN
+        return self.SECRET_KEY.startswith("dev-")
 
     @property
     def sqlalchemy_url(self) -> str:
