@@ -277,9 +277,9 @@ class LocalTextProvider:
     @staticmethod
     def make_title(topic_display: str, age: str, rng: random.Random) -> str:
         patterns = [
-            "{topic} for Kids | Fun Learning Adventure (Ages {age})",
+            "{topic} for Kids | Fun Learning Adventure 🌟",
             "Learn {topic}! 🌟 Fun Educational Video for Kids",
-            "{topic} Adventure! | Learn & Play for Ages {age}",
+            "{topic} Adventure! | Learn & Play for Kids",
             "Let's Learn {topic} Together! 🎈 Kids Educational Video",
         ]
         title = rng.choice(patterns).format(topic=topic_display, age=age)

@@ -1,26 +1,26 @@
 """Built-in offline voice provider.
 
-A compact formant synthesizer purpose-built for predictable timing:
+Resolution order (automatic):
 
-* Grapheme-to-phoneme conversion (English) with digraph rules
-* Source-filter synthesis (harmonic glottal source + two formant resonators)
-* Child-friendly pitch with natural sentence contours (question rise etc.)
-* Exact per-word timing output — perfect for subtitle synchronization
-* Optional pacing control so narration fits each scene's planned duration
+1. ``espeak``/``espeak-ng`` if present (Linux distros, Termux...)
+2. **System TTS**: Windows SAPI (Microsoft voices via PowerShell) or macOS
+   ``say`` — genuinely intelligible, installed by default on those OSes
+3. Compact formant synthesizer as the universal fallback ("electronic
+   storyteller" character designed for predictable timing)
 
-It sounds "Electronic Storyteller" rather than human — it's designed for
-reliable offline previews. For release-quality narration, select OpenAI TTS,
-ElevenLabs or Google Cloud TTS on the API Keys page; every provider fills the
-same VoiceResult contract. If an ``espeak`` binary exists on the system it is
-preferred automatically.
+All tiers fill the same ``VoiceResult`` contract (path, duration, per-word
+timings) so karaoke captions stay aligned. For production-quality narration,
+select OpenAI TTS, ElevenLabs or Google Cloud TTS on the API Keys page.
 """
 
 from __future__ import annotations
 
+import base64
 import math
 import re
 import shutil
 import subprocess
+import sys
 import wave
 from dataclasses import dataclass
 
@@ -148,12 +148,70 @@ class LocalVoiceProvider:
     # ------------------------------------------------------------------
     def synthesize(self, text: str, out_path: str, *, voice: str = "female",
                    language: str = "en", target_duration: float | None = None) -> VoiceResult:
+        text = _clean_spoken_text(text)
         espeak = shutil.which("espeak") or shutil.which("espeak-ng")
         if espeak:
             result = self._synthesize_espeak(espeak, text, out_path, voice, target_duration)
             if result:
                 return result
+        if language == "en":
+            result = self._synthesize_system(text, out_path, voice)
+            if result:
+                return result
         return self._synthesize_formant(text, out_path, voice, target_duration)
+
+    # ------------------------------------------------------------------
+    def _synthesize_system(self, text: str, out_path: str, voice: str) -> VoiceResult | None:
+        """Human-sounding offline TTS that ships with the OS (Windows/macOS)."""
+        if sys.platform == "win32":
+            return self._synthesize_sapi(text, out_path, voice)
+        if sys.platform == "darwin":
+            return self._synthesize_say(text, out_path)
+        return None
+
+    def _synthesize_sapi(self, text: str, out_path: str, voice: str) -> VoiceResult | None:
+        """Windows Speech API — natural Microsoft voices, no install needed.
+
+        Text is passed base64-encoded so quoting/punctuation cannot break the
+        PowerShell command line.
+        """
+        powershell = shutil.which("powershell") or shutil.which("powershell.exe")
+        if not powershell:
+            return None
+        gender = "Male" if voice == "male" else "Female"
+        age_hint = "Child" if voice == "child" else "Adult"
+        b64 = base64.b64encode(text.encode("utf-8")).decode("ascii")
+        script = (
+            "Add-Type -AssemblyName System.Speech; "
+            "$s = New-Object System.Speech.Synthesis.SpeechSynthesizer; "
+            f"$s.SelectVoiceByHints([System.Speech.Synthesis.VoiceGender]::{gender}, "
+            f"[System.Speech.Synthesis.VoiceAge]::{age_hint}); "
+            "$s.Rate = -1; "
+            f"$s.SetOutputToWaveFile('{out_path}'); "
+            f"$t = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('{b64}')); "
+            "$s.Speak($t); $s.Dispose();"
+        )
+        try:
+            subprocess.run([powershell, "-NoProfile", "-NonInteractive", "-Command", script],
+                           check=True, capture_output=True, timeout=180)
+            return _result_from_wav(text, out_path)
+        except Exception:
+            return None
+
+    def _synthesize_say(self, text: str, out_path: str) -> VoiceResult | None:
+        """macOS `say` command via the bundled ffmpeg for aiff -> wav."""
+        say = shutil.which("say")
+        if not say:
+            return None
+        from app.services.rendering.ffmpeg_utils import run_ffmpeg
+
+        tmp = out_path + ".aiff"
+        try:
+            subprocess.run([say, "-o", tmp, text], check=True, capture_output=True, timeout=180)
+            run_ffmpeg(["-y", "-i", tmp, out_path], timeout=120)
+            return _result_from_wav(text, out_path)
+        except Exception:
+            return None
 
     # ------------------------------------------------------------------
     def _synthesize_formant(self, text: str, out_path: str, voice: str,
@@ -263,6 +321,31 @@ class LocalVoiceProvider:
             return VoiceResult(path=out_path, duration=dur, word_timings=timings)
         except Exception:
             return None
+
+
+def _clean_spoken_text(text: str) -> str:
+    """Strip anything that must never be spoken aloud.
+
+    Parenthetical fragments — e.g. "(Ages 7-9)" — are visual/SEO metadata;
+    narration must never read them out. Also collapses stray whitespace.
+    """
+    cleaned = re.sub(r"\s*\([^)]*\)", " ", text)
+    return re.sub(r"\s{2,}", " ", cleaned).strip()
+
+
+def _result_from_wav(text: str, out_path: str) -> VoiceResult | None:
+    """Build a VoiceResult from an externally-produced wav (proportional timings)."""
+    import contextlib
+
+    with contextlib.suppress(OSError):
+        with wave.open(out_path, "rb") as wf:
+            if wf.getnframes() == 0:
+                return None
+            dur = wf.getnframes() / float(wf.getframerate())
+        words = re.findall(r"[A-Za-z']+|\d+", text)
+        timings = _spread_timings(words, dur)
+        return VoiceResult(path=out_path, duration=dur, word_timings=timings)
+    return None
 
 
 def _spread_timings(words: list[str], total: float) -> list[WordTiming]:

@@ -84,3 +84,14 @@ def test_music_generation(tmp_path: Path):
         duration = wf.getnframes() / wf.getframerate()
     assert 8.5 < duration < 10.5
     assert "royalty-free" in result.credits
+
+
+def test_voice_spoken_text_sanitization():
+    """Parentheticals (e.g. age suffixes) are stripped before synthesis."""
+    from app.services.providers.voice.local import _clean_spoken_text
+
+    out = _clean_spoken_text("Welcome friends (Ages 7-9)  let's count  3 things!")
+    assert "(" not in out and "Ages" not in out
+    assert "  " not in out
+    assert out.startswith("Welcome friends")
+    assert "let's count" in out

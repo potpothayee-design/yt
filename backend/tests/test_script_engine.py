@@ -63,3 +63,12 @@ def test_character_sheet_is_deterministic_and_distinct():
     _ = distinct  # (different project seeds may vary; determinism is the contract)
     assert a1["name"] == a2["name"] and a1["body_hex"] == a2["body_hex"]
     assert isinstance(a1["consistency_rules"], list) and len(a1["consistency_rules"]) >= 4
+
+
+def test_titles_never_contain_age_suffix():
+    """'(Ages 7-9)' must not leak into titles (SEO/visual confusion, user ask)."""
+    for topic in ("Solar System", "ABCs", "Dinosaurs"):
+        for age in ("3-6", "7-9", "10-13"):
+            for _seed in range(4):
+                script = _make_script(topic=topic, age=age)
+                assert "ages" not in script["title"].lower(), script["title"]
