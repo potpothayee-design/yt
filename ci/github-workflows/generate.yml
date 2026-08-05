@@ -1,0 +1,84 @@
+name: Generate Video (long-running pipeline)
+
+# Long-running generation jobs dispatched from the dashboard ("GitHub runner").
+# The workflow runs the FULL pipeline with the offline-capable providers,
+# streams progress back to the dashboard API, uploads artifacts, and marks
+# completion. Secrets used:
+#   STUDIO_JOB_CALLBACK_SECRET — shared secret for the API callbacks
+# Optional provider keys can be added as repo secrets and are picked up by the
+# pipeline automatically (OPENAI_API_KEY, ELEVENLABS_API_KEY, ...).
+
+on:
+  workflow_dispatch:
+    inputs:
+      job_id:
+        description: "Dashboard job id (from the Generate request)"
+        required: true
+      topic:
+        description: "Video topic, e.g. 'ABCs'"
+        required: true
+      params:
+        description: "JSON generation params (age, length, style...)"
+        required: false
+        default: "{}"
+      callback_url:
+        description: "API callback URL for progress/artifacts"
+        required: true
+
+jobs:
+  generate:
+    name: Render video — ${{ inputs.topic }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    env:
+      SECRET_KEY: actions-runner-ephemeral-${{ github.run_id }}
+      JOB_CALLBACK_SECRET: ${{ secrets.STUDIO_JOB_CALLBACK_SECRET }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      STABILITY_API_KEY: ${{ secrets.STABILITY_API_KEY }}
+      ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+      GOOGLE_TTS_API_KEY: ${{ secrets.GOOGLE_TTS_API_KEY }}
+      PIKA_API_KEY: ${{ secrets.PIKA_API_KEY }}
+      RUNWAY_API_KEY: ${{ secrets.RUNWAY_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ runner.os }}-${{ hashFiles('backend/requirements.txt') }}
+
+      - name: Install backend
+        working-directory: backend
+        run: pip install -r requirements.txt
+
+      - name: Run the production pipeline
+        id: pipeline
+        working-directory: backend
+        run: |
+          python -m app.workers.runner \
+            --standalone \
+            --topic "${{ inputs.topic }}" \
+            --params '${{ inputs.params }}' \
+            --out "$PWD/dist" \
+            --callback-url "${{ inputs.callback_url }}" \
+            --job-token "${{ env.JOB_CALLBACK_SECRET }}"
+
+      - name: Upload video artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: video-${{ inputs.job_id }}-${{ github.run_id }}
+          path: |
+            backend/dist/final.mp4
+            backend/dist/thumbnails/
+            backend/dist/captions.srt
+            backend/dist/captions.ass
+            backend/dist/state.json
+          if-no-files-found: warn
+          retention-days: 30

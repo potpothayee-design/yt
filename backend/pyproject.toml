@@ -1,0 +1,35 @@
+[project]
+name = "ai-kids-video-studio-backend"
+version = "1.0.0"
+description = "AI Kids Video Studio — FastAPI backend and production pipeline"
+requires-python = ">=3.11"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 104
+extend-exclude = [".venv"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W",    # pycodestyle
+    "F",         # pyflakes
+    "I",         # isort
+    "UP",        # pyupgrade
+    "B",         # bugbear
+    "SIM",       # simplify
+    "C90",       # complexity
+]
+ignore = [
+    # FastAPI dependency injection uses callables in defaults by design
+    "B008",
+    # implicit string concat in collections is used for long copy lines deliberately
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+[tool.ruff.lint.pycodestyle]
+max-line-length = 120
+
+[tool.ruff.lint.mccabe]
+max-complexity = 18

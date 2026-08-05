@@ -1,0 +1,46 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+*.egg-info/
+
+# ---- Node / Next.js ----
+node_modules/
+.next/
+out/
+npm-debug.log*
+
+# ---- Environment & secrets ----
+.env
+.env.*
+!.env.example
+*.pem
+
+# ---- Generated media & local storage (never commit user content) ----
+backend/storage/media/
+backend/storage/tmp/
+media/
+storage/
+
+# ---- Databases ----
+*.db
+*.sqlite3
+
+# ---- OS / editors ----
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# ---- Docker / build ----
+dist/
+build/
+coverage/
+.coverage
+htmlcov/
