@@ -21,6 +21,8 @@ FONT_SEARCH_PATHS = [
     "/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf",
     "/Library/Fonts/Arial Bold.ttf",
     "C:/Windows/Fonts/arialbd.ttf",
+    "C:/Windows/Fonts/segoeuib.ttf",
+    "C:/Windows/Fonts/arial.ttf",
 ]
 
 

@@ -44,6 +44,18 @@ YouTube.
 
 ## 🚀 Quick Start
 
+### Option 0 — One-click local launcher (Windows/macOS/Linux, no Docker)
+
+Requires only **Python 3.10+** and **Node.js 18+** on your machine:
+
+```bash
+./run-local.sh       # macOS / Linux
+run-local.bat        # Windows (or just double-click it)
+```
+
+It installs everything, builds the frontend, starts both servers and opens
+http://localhost:3000 for you. Register any account on the login page.
+
 ### Option A — Docker (one command)
 
 ```bash
