@@ -26,6 +26,12 @@ backend/storage/media/
 backend/storage/tmp/
 media/
 storage/
+# ...but the storage *service package* is source code, not user content:
+!**/services/storage/
+!**/services/storage/**
+# (re-apply build-artifact rules inside the un-ignored package)
+**/__pycache__/
+*.py[cod]
 
 # ---- Databases ----
 *.db
