@@ -18,6 +18,12 @@ fi
 echo "[1/4] Python dependencies..."
 [ -d backend/.venv ] || python3 -m venv backend/.venv
 backend/.venv/bin/pip install -q -r backend/requirements.txt
+# Optional but recommended: neural voice engine (MIT, offline, CPU).
+if ! backend/.venv/bin/python -c "import piper" 2>/dev/null; then
+  backend/.venv/bin/pip install -q piper-tts 2>/dev/null \
+    && echo "       + piper-tts neural voice installed" \
+    || echo "       (optional: piper-tts skipped — voice still works)"
+fi
 
 echo "[2/4] Frontend dependencies..."
 [ -d frontend/node_modules ] || (cd frontend && npm ci --no-audit --no-fund)

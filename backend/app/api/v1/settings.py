@@ -102,6 +102,10 @@ def test_provider(capability: str, user: User = Depends(get_current_user),
         get_settings(), f"{capability.upper()}_PROVIDER")
     api_key = decrypt_secret(row.api_key_encrypted) if row else None
     provider = get_provider(capability, provider_name, api_key)
+    probe = getattr(provider, "probe", None)
+    if callable(probe):
+        ok, message = probe()
+        return ProviderTestResult(ok=ok, message=message)
     if not getattr(provider, "requires_key", False):
         return ProviderTestResult(ok=True, message=f"'{provider.label}' works offline — no key needed.")
     ok, message = _ping_external(capability, provider_name, api_key or

@@ -1,0 +1,18 @@
+# Optional open-source AI engines (all run fully offline, no API keys).
+# Install with:  pip install -r requirements-local-ai.txt
+#
+# piper-tts is auto-installed by run-local.sh / run-local.bat when possible;
+# the heavyweight items below are intentionally manual (several GB of disk/RAM).
+
+# --- Voice (recommended, lightweight) --------------------------------------
+piper-tts>=1.2         # github.com/rhasspy/piper — MIT, CPU-friendly, ~60MB voice
+
+# --- Music (heavyweight, ~6GB disk incl. torch; 8GB+ RAM recommended) -------
+# torch                    # CPU or CUDA build from https://pytorch.org
+# audiocraft>=1.3          # github.com/facebookresearch/audiocraft (MusicGen)
+
+# --- Text: no package needed ------------------------------------------------
+# Ollama runs as a desktop app: https://ollama.com  (ollama pull qwen2.5:3b)
+
+# --- Image: no package needed ------------------------------------------------
+# AUTOMATIC1111/stable-diffusion-webui runs as its own app (needs NVIDIA GPU)

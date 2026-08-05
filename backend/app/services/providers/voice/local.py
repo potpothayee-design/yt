@@ -155,6 +155,12 @@ class LocalVoiceProvider:
             if result:
                 return result
         if language == "en":
+            # Piper neural TTS (optional pip package) — best offline quality
+            from app.services.providers.voice.piper import synthesize_via_piper
+
+            result = synthesize_via_piper(text, out_path, voice)
+            if result:
+                return result
             result = self._synthesize_system(text, out_path, voice)
             if result:
                 return result

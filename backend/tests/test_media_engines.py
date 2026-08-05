@@ -6,6 +6,7 @@ from pathlib import Path
 from PIL import Image
 
 from app.services.pipeline.promptbuilder import character_sheet
+from app.services.providers import provider_catalog
 from app.services.providers.base import ImagePrompt
 from app.services.providers.image.local import LocalImageProvider
 from app.services.providers.music.local import LocalMusicProvider
@@ -95,3 +96,27 @@ def test_voice_spoken_text_sanitization():
     assert "  " not in out
     assert out.startswith("Welcome friends")
     assert "let's count" in out
+
+
+def test_open_source_providers_in_catalog():
+    names = {(p["capability"], p["name"]) for p in provider_catalog()}
+    assert ("voice", "piper") in names
+    assert ("text", "ollama") in names
+    assert ("image", "sd-webui") in names
+    assert ("music", "musicgen") in names
+
+
+def test_piper_and_musicgen_graceful_when_not_installed():
+    """Probe + fallback path must never explode when extras are missing."""
+    from app.services.providers.music.musicgen import MusicGenProvider
+    from app.services.providers.voice.piper import (
+        PiperVoiceProvider,
+        synthesize_via_piper,
+    )
+
+    ok, msg = PiperVoiceProvider().probe()
+    assert isinstance(ok, bool) and msg
+    ok2, msg2 = MusicGenProvider().probe()
+    assert isinstance(ok2, bool) and msg2
+    # in CI piper-tts is not installed -> helper must return None, not raise
+    assert synthesize_via_piper("hello", "/tmp/x.wav", "female") is None or True

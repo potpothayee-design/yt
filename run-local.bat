@@ -44,6 +44,11 @@ if errorlevel 1 (
   pause
   exit /b 1
 )
+rem  Optional but recommended: neural voice engine (MIT, offline, CPU).
+backend\.venv\Scripts\python.exe -c "import piper" >nul 2>nul && goto :piper_ok
+backend\.venv\Scripts\python.exe -m pip install -q piper-tts >nul 2>nul
+if errorlevel 1 ( echo        ^(optional: piper-tts skipped - voice still works^) ) else ( echo        + piper-tts neural voice installed )
+:piper_ok
 
 echo  [2/4] Installing frontend dependencies...
 if not exist frontend\node_modules (

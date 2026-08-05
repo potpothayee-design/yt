@@ -31,6 +31,28 @@ the local one instead of failing.
 > Vendor video/TTS APIs evolve. The Runway/Pika clients isolate their payload
 > shape in one small method — update that if your account uses a newer schema.
 
+## Open-source GitHub providers (free, offline, no API keys)
+
+The registry ships with four providers backed by public open-source projects.
+Enable them in **Settings → Providers**; click **Test** to check readiness.
+
+| Capability | Provider | Upstream repo | Install once | Notes |
+|---|---|---|---|---|
+| Voice | **Piper TTS** | [rhasspy/piper](https://github.com/rhasspy/piper) | `pip install piper-tts` (auto-tried by the launcher scripts) | MIT. CPU-friendly neural voices; ~60MB voice model downloads once. The built-in `local` voice also auto-uses Piper when installed. |
+| Text | **Ollama** | [ollama/ollama](https://github.com/ollama/ollama) | install the app, then `ollama pull qwen2.5:3b` | Runs local LLMs (Llama/Qwen/Gemma...). Override with `OLLAMA_HOST` / `OLLAMA_MODEL` env vars. |
+| Image | **SD WebUI** | [AUTOMATIC1111/stable-diffusion-webui](https://github.com/AUTOMATIC1111/stable-diffusion-webui) | install WebUI, start with `--api` | Needs an NVIDIA GPU. `SDWEBUI_HOST` env var if not `http://127.0.0.1:7860`. |
+| Music | **MusicGen** | [facebookresearch/audiocraft](https://github.com/facebookresearch/audiocraft) | `pip install torch audiocraft` | Heavyweight (~6GB). CPU works but slow; weights download ~1.6GB once. Code MIT — **weights CC-BY-NC-4.0 (non-commercial only)**. |
+
+Video-capable open-source models (Stable Video Diffusion, AnimateDiff,
+CogVideoX) currently require beefy GPUs (12GB+ VRAM) — out of scope for the
+default local install; the built-in motion engine covers the offline path
+and Pika/Runway remain available as hosted options.
+
+> **License note:** piper voices and SD community checkpoints carry their own
+> licenses; MusicGen output is non-commercial per its weights license. The
+> built-in local providers (writer/illustrator/voice/composer/motion engine)
+> have no such restrictions — everything they produce is yours outright.
+
 ## How consistency survives a provider swap
 
 Both external image providers and video providers receive the same payloads:

@@ -39,6 +39,12 @@ _REGISTRY: dict[str, dict[str, tuple[str, str, str, bool, str]]] = {
             "Anthropic Claude models guided by the internal knowledge base "
             "and strict originality/age-appropriateness constraints.",
         ),
+        "ollama": (
+            "app.services.providers.text.ollama", "OllamaTextProvider",
+            "Ollama local LLM (open-source, offline)", False,
+            "Local models via github.com/ollama/ollama — private, no key. "
+            "Install Ollama, then: ollama pull qwen2.5:3b.",
+        ),
     },
     "image": {
         "local": (
@@ -57,6 +63,12 @@ _REGISTRY: dict[str, dict[str, tuple[str, str, str, bool, str]]] = {
             "app.services.providers.image.stability", "StabilityImageProvider",
             "Stability AI (SDXL)", True,
             "Stability AI image generation with negative prompt support.",
+        ),
+        "sd-webui": (
+            "app.services.providers.image.sdwebui", "SDWebUIImageProvider",
+            "Stable Diffusion WebUI (open-source, self-hosted)", False,
+            "AUTOMATIC1111 SD WebUI (GitHub) running on your own GPU with "
+            "--api enabled. No key — fully local once set up.",
         ),
     },
     "video": {
@@ -83,8 +95,14 @@ _REGISTRY: dict[str, dict[str, tuple[str, str, str, bool, str]]] = {
         "local": (
             "app.services.providers.voice.local", "LocalVoiceProvider",
             "Built-in Voice (offline)", False,
-            "Offline formant synthesizer (clear, paced narration with word "
-            "timings). Great for previews; plug a voiced provider for release.",
+            "Offline narration engine — automatically uses the best local tier "
+            "available (espeak → Piper neural → OS voices → formant synth).",
+        ),
+        "piper": (
+            "app.services.providers.voice.piper", "PiperVoiceProvider",
+            "Piper TTS (open-source, offline)", False,
+            "MIT-licensed neural TTS (github.com/rhasspy/piper) running fully on "
+            "CPU. Needs: pip install piper-tts — voice model (~60MB) downloads once.",
         ),
         "openai-tts": (
             "app.services.providers.voice.openai_tts", "OpenAITTSProvider",
@@ -111,6 +129,13 @@ _REGISTRY: dict[str, dict[str, tuple[str, str, str, bool, str]]] = {
             "Royalty-free Library", False,
             "Pick a track from a configured folder of your own licensed/ "
             "royalty-free music files.",
+        ),
+        "musicgen": (
+            "app.services.providers.music.musicgen", "MusicGenProvider",
+            "MusicGen (open-source, offline)", False,
+            "Meta MusicGen via github.com/facebookresearch/audiocraft — real "
+            "instrumental generation on CPU/GPU. Optional heavyweight install; "
+            "weights CC-BY-NC (non-commercial).",
         ),
     },
 }
