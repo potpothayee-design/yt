@@ -15,6 +15,8 @@ os.environ["SECRET_KEY"] = "test-secret-key-" + "x" * 32
 os.environ["DATABASE_URL"] = f"sqlite:///{_TMP}/test.db"
 os.environ["MEDIA_ROOT"] = str(_TMP / "media")
 os.environ["JOB_CALLBACK_SECRET"] = "test-callback-secret"
+os.environ["YOUTUBE_CLIENT_ID"] = "test-client-id.apps.googleusercontent.com"
+os.environ["YOUTUBE_CLIENT_SECRET"] = "test-client-secret"
 
 from fastapi.testclient import TestClient  # noqa: E402
 

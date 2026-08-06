@@ -45,17 +45,26 @@ def youtube_disconnect(user: User = Depends(get_current_user),
 
 @router.get("/connect")
 def youtube_connect(user: User = Depends(get_current_user),
-                    db: Session = Depends(get_db)) -> dict:
-    """Return the Google consent URL for this user."""
+                    db: Session = Depends(get_db),
+                    email: str = Query("", max_length=254)) -> dict:
+    """Return the Google consent URL for this user.
+
+    ``email`` (optional) becomes Google's ``login_hint`` so the account picker
+    preselects the Gmail that owns the target channel instead of whichever
+    account the browser defaults to.
+    """
     if not yt_oauth.configured():
         raise AppError(
             "YouTube OAuth is not configured on the server. Set "
             "YOUTUBE_CLIENT_ID / YOUTUBE_CLIENT_SECRET (see docs/YOUTUBE_SETUP.md).",
             422,
         )
+    hint = email.strip()
+    if hint and ("@" not in hint or " " in hint):
+        raise AppError("That doesn't look like an email address.", 422)
     from app.core.security import create_access_token
     state = create_access_token(str(user.id))  # JWT doubles as OAuth state
-    return {"auth_url": yt_oauth.build_auth_url(state)}
+    return {"auth_url": yt_oauth.build_auth_url(state, login_hint=hint or None)}
 
 
 @router.get("/callback")

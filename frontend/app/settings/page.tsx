@@ -19,6 +19,7 @@ const CAPABILITY_LABELS: Record<string, string> = {
 export default function SettingsPage() {
   const [settings, setSettings] = useState<ProviderSettings | null>(null);
   const [yt, setYt] = useState<YouTubeStatus | null>(null);
+  const [ytEmail, setYtEmail] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
   const [testing, setTesting] = useState<string | null>(null);
   const router = useRouter();
@@ -62,7 +63,8 @@ export default function SettingsPage() {
 
   const connectYouTube = async () => {
     try {
-      const resp = await api.get<{ auth_url: string }>("/api/v1/youtube/connect");
+      const q = ytEmail.trim() ? `?email=${encodeURIComponent(ytEmail.trim())}` : "";
+      const resp = await api.get<{ auth_url: string }>(`/api/v1/youtube/connect${q}`);
       window.location.href = resp.auth_url;
     } catch (err) {
       setMsg(err instanceof ApiError ? err.message : "could not start YouTube connect");
@@ -163,9 +165,21 @@ export default function SettingsPage() {
               Disconnect
             </button>
           ) : (
-            <button className="btn-primary text-xs" onClick={connectYouTube} disabled={!yt?.configured}>
-              Connect YouTube Channel
-            </button>
+            <div className="flex w-full flex-col gap-2 md:w-auto">
+              <input
+                className="input w-full md:w-72"
+                type="email"
+                placeholder="channel-owner@gmail.com (optional)"
+                value={ytEmail}
+                onChange={(e) => setYtEmail(e.target.value)}
+              />
+              <button className="btn-primary text-xs" onClick={connectYouTube} disabled={!yt?.configured}>
+                Connect YouTube Channel
+              </button>
+              <p className="max-w-xs text-xs text-slate-400">
+                Google shows an account picker — choose the Gmail that owns your channel.
+              </p>
+            </div>
           )}
         </div>
       </Card>

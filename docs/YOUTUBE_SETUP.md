@@ -37,6 +37,13 @@ Dashboard → **Settings → Connect YouTube Channel** → consent on Google
 proceed with your own account). You are redirected back after consent and
 the studio stores the refresh token **encrypted** (`provider_settings`).
 
+**Multiple Google accounts?** The consent flow always opens Google's account
+picker so you can choose the channel-owning Gmail, and Settings has an
+optional email box that preselects it. Make sure that exact Gmail is listed
+under **OAuth consent screen → Test users**, or Google will show
+"Access blocked: this app has not completed verification". Connected the
+wrong account? Hit **Disconnect** in Settings and connect again.
+
 ## 4. What uploads do
 
 | Action | Behavior |

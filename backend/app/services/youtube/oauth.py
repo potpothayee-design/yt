@@ -21,17 +21,29 @@ def configured() -> bool:
     return bool(s.YOUTUBE_CLIENT_ID and s.YOUTUBE_CLIENT_SECRET)
 
 
-def build_auth_url(state: str) -> str:
-    """Google consent URL. Raises if OAuth client is not configured."""
+def build_auth_url(state: str, login_hint: str | None = None) -> str:
+    """Google consent URL. Raises if OAuth client is not configured.
+
+    ``prompt="select_account consent"`` forces Google's account picker to appear
+    every time — essential when the browser has several signed-in Gmail accounts
+    — while ``consent`` still guarantees a refresh token is issued.
+    ``login_hint`` preselects a specific account email when given.
+    """
     from google_auth_oauthlib.flow import Flow
 
     s = get_settings()
     flow = Flow.from_client_config(
         _client_config(), scopes=s.youtube_scope_list, redirect_uri=s.YOUTUBE_REDIRECT_URI
     )
-    url, _ = flow.authorization_url(
-        access_type="offline", include_granted_scopes="true", prompt="consent", state=state
-    )
+    kwargs: dict[str, Any] = {
+        "access_type": "offline",
+        "include_granted_scopes": "true",
+        "prompt": "select_account consent",
+        "state": state,
+    }
+    if login_hint:
+        kwargs["login_hint"] = login_hint
+    url, _ = flow.authorization_url(**kwargs)
     return url
 
 
