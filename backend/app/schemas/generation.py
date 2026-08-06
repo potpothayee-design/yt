@@ -21,6 +21,9 @@ class GenerationParams(BaseModel):
     music_mood: str = Field(default="cheerful", max_length=40)
     aspect_ratio: Literal["16:9", "9:16", "1:1"] = "16:9"
     quality: Literal["draft", "standard", "high"] = "standard"
+    # Narration playback speed — 1.25 fits ~25% more content per minute while
+    # staying perfectly synced with the karaoke captions.
+    voice_speed: float = Field(default=1.0, ge=0.75, le=1.5)
 
 
 class ProjectCreateRequest(BaseModel):

@@ -37,6 +37,7 @@ export default function GeneratorPage() {
   const [style, setStyle] = useState(STYLES[0]);
   const [animation, setAnimation] = useState(ANIMATIONS[0]);
   const [voice, setVoice] = useState(VOICES[0]);
+  const [voiceSpeed, setVoiceSpeed] = useState(1.0);
   const [language, setLanguage] = useState("en");
   const [mood, setMood] = useState(MOODS[0]);
   const [ratio, setRatio] = useState("16:9");
@@ -91,6 +92,7 @@ export default function GeneratorPage() {
           style,
           animation_type: animation,
           voice,
+          voice_speed: voiceSpeed,
           language,
           music_mood: mood,
           aspect_ratio: ratio,
@@ -194,6 +196,26 @@ export default function GeneratorPage() {
                     <option key={v}>{v}</option>
                   ))}
                 </select>
+              </div>
+              <div className="md:col-span-2">
+                <label className="label">
+                  Narration Speed:{" "}
+                  <span className="font-bold text-brand-500">{voiceSpeed.toFixed(2)}×</span>
+                  {voiceSpeed > 1.02 && (
+                    <span className="ml-1 text-xs text-slate-400">
+                      (fits ~{Math.round((voiceSpeed - 1) * 100)}% more content — captions stay in sync)
+                    </span>
+                  )}
+                </label>
+                <input
+                  type="range"
+                  min="1"
+                  max="1.5"
+                  step="0.05"
+                  value={voiceSpeed}
+                  onChange={(e) => setVoiceSpeed(Number(e.target.value))}
+                  className="w-full accent-brand-500"
+                />
               </div>
               <div>
                 <label className="label">Language</label>

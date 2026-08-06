@@ -80,9 +80,10 @@ def _fit(parts: list[str], cap: int) -> str:
     return " ".join(out)
 
 
-def _planned_duration(narration: str, age: str) -> float:
-    """Seconds the narration should take at kid-friendly pace (+ pad)."""
-    wps = _WPM.get(age, 120) / 60.0
+def _planned_duration(narration: str, age: str, speed: float = 1.0) -> float:
+    """Seconds the narration should take at kid-friendly pace (+ pad),
+    adjusted by narration playback speed (1.25x → ~20% shorter)."""
+    wps = (_WPM.get(age, 120) / 60.0) * speed
     return round(_words(narration) / wps + 0.7, 2)
 
 
@@ -135,6 +136,7 @@ class LocalTextProvider:
         scene_plan: dict[str, Any],
     ) -> dict[str, Any]:
         age = params.get("target_age", "3-6")
+        speed = float(params.get("voice_speed", 1.0) or 1.0)
         topic_display = knowledge.get("display_name", params.get("topic", "").title())
         rng = random.Random(scene_plan.get("seed", 42))
         seeds = knowledge.get("scene_seeds", [])
@@ -143,7 +145,7 @@ class LocalTextProvider:
 
         # ---- word budget so narration actually fits the requested length ----
         length = params.get("length_seconds", 30)
-        wps = _WPM.get(age, 125) / 60.0
+        wps = (_WPM.get(age, 125) / 60.0) * speed
         budget = max(24.0, wps * max(12.0, length - 7.0))  # minus cards/transitions
         # fixed scene slots (minimum core sizes in words)
         intro_cap = max(10, round(budget * 0.20))
@@ -167,7 +169,7 @@ class LocalTextProvider:
             "Stay for your special question at the end!",
         ], intro_cap)
         scenes.append(self._scene(0, "intro", "Welcome!",
-                                  f"Let's explore {topic_display}!", intro_text, age))
+                                  f"Let's explore {topic_display}!", intro_text, age, speed))
 
         idx = 1
         total = len(chosen)
@@ -179,7 +181,7 @@ class LocalTextProvider:
             if i < total - 1:
                 parts.append(rng.choice(_TRANSITIONS))
             scenes.append(self._scene(idx, "lesson", focus, seed.get("text", focus),
-                                      _fit(parts, lesson_cap), age))
+                                      _fit(parts, lesson_cap), age, speed))
             idx += 1
 
         if fact_cap and knowledge.get("facts"):
@@ -187,12 +189,12 @@ class LocalTextProvider:
                 max(2, len(scenes) - 2),
                 self._scene(0, "fact", "Fun fact", "Did you know?",
                             _fit([rng.choice(_FACT_LEADS) + " " + rng.choice(knowledge["facts"])],
-                                 fact_cap), age),
+                                 fact_cap), age, speed),
             )
 
         quiz_text = _fit(["Now it's YOUR turn!", quiz,
                           "Say your answer out loud — I am listening!"], quiz_cap)
-        scenes.append(self._scene(idx, "quiz", "Your turn", "Your turn!", quiz_text, age))
+        scenes.append(self._scene(idx, "quiz", "Your turn", "Your turn!", quiz_text, age, speed))
         idx += 1
 
         recap_items = ", ".join(s["focus"] for s in scenes
@@ -202,7 +204,7 @@ class LocalTextProvider:
              rng.choice(_OUTROS), rng.choice(_ENCOURAGEMENTS),
              "See you next time — keep asking big questions!"],
             outro_cap)
-        scenes.append(self._scene(idx, "outro", "Goodbye!", "Great job today!", outro_text, age))
+        scenes.append(self._scene(idx, "outro", "Goodbye!", "Great job today!", outro_text, age, speed))
 
         for i, s in enumerate(scenes):
             s["index"] = i  # reindex after insertions
@@ -259,7 +261,7 @@ class LocalTextProvider:
 
     @staticmethod
     def _scene(index: int, type_: str, focus: str, on_screen: str,
-               narration: str, age: str) -> dict[str, Any]:
+               narration: str, age: str, speed: float = 1.0) -> dict[str, Any]:
         return {
             "index": index,
             "type": type_,
@@ -267,7 +269,7 @@ class LocalTextProvider:
             "on_screen_text": on_screen[:40],
             "narration": narration,
             "words": _words(narration),
-            "planned_duration": _planned_duration(narration, age),
+            "planned_duration": _planned_duration(narration, age, speed),
         }
 
     # ------------------------------------------------------------------

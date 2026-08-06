@@ -33,6 +33,7 @@ from app.services.pipeline.promptbuilder import (
 from app.services.providers.base import (
     ImagePrompt,
     VideoPrompt,
+    VoiceResult,
     WordTiming,
 )
 from app.services.providers.image.local import render_intro_card, render_outro_card
@@ -61,6 +62,31 @@ _ASPECT_SIZES = {
 }
 
 _MOTIONS = ["zoom_in", "pan_right", "zoom_out", "pan_left", "float"]
+
+
+def apply_voice_speed(wav_path: str, result, speed: float):
+    """Time-stretch narration by `speed` (e.g. 1.25) preserving pitch, and
+    rescale every word timing by the same factor so karaoke captions and
+    scene lengths stay perfectly in sync.
+
+    Provider-agnostic: applied by the engine to ANY voice provider's output.
+    """
+    if abs(speed - 1.0) < 0.02:
+        return result
+    speed = min(2.0, max(0.5, float(speed)))
+    from app.services.rendering.ffmpeg_utils import probe_duration, run_ffmpeg
+
+    tmp = wav_path + ".stretched.wav"
+    run_ffmpeg(["-y", "-i", wav_path, "-af", f"atempo={speed:.3f}",
+                "-ar", "22050", "-ac", "1", tmp], timeout=180)
+    import os
+
+    os.replace(tmp, wav_path)
+    new_duration = probe_duration(wav_path)
+    scaled = [WordTiming(word=w.word, start=round(w.start / speed, 3),
+                         end=round(w.end / speed, 3))
+              for w in result.word_timings]
+    return VoiceResult(path=wav_path, duration=new_duration, word_timings=scaled)
 _VISUAL_BY_TYPE = {
     "intro": "Welcome stage: bright stage with bunting flags and floating confetti",
     "lesson": "Learning scene: big educational subject on a soft meadow stage",
@@ -305,6 +331,8 @@ class PipelineEngine:
                 language=script.get("language", "en"),
                 target_duration=scene.get("planned_duration"),
             )
+            speed = float(self.ctx.params.get("voice_speed", 1.0) or 1.0)
+            result = apply_voice_speed(str(out), result, speed)
             voice_data[str(idx)] = {
                 "path": out.name,
                 "duration": result.duration,

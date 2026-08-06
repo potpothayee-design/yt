@@ -147,3 +147,50 @@ def test_free_hosted_providers_in_catalog_and_urls(monkeypatch):
 
     assert _extract_json('```json\n{"a": 1}\n```') == '{"a": 1}'
     assert _extract_json('here you go: {"a": 1} done') == '{"a": 1}'
+
+
+def test_voice_speed_stretch_keeps_caption_sync(tmp_path: Path):
+    """1.25x speed-up: audio shorter by 1/1.25, word timings rescaled in-step."""
+
+
+    from app.services.pipeline.engine import apply_voice_speed
+
+    out = tmp_path / "vox.wav"
+    base = LocalVoiceProvider().synthesize(
+        "Counting numbers one two three is really fun and easy today friend!",
+        str(out))
+    sped = apply_voice_speed(str(out), base, 1.25)
+    assert abs(sped.duration - base.duration / 1.25) < 0.15
+    ratio = base.word_timings[2].start / sped.word_timings[2].start
+    assert abs(ratio - 1.25) < 0.08
+    assert sped.word_timings[0].word == base.word_timings[0].word
+
+
+def test_faster_speed_allows_more_script_words():
+    """1.25x narration → bigger word budget; at 60s it crosses into an extra
+    lesson scene (+~25% content, exactly what the speed setting is for)."""
+    slow = _make_script_s("Counting", 60, "3-6", 1.0)
+    fast = _make_script_s("Counting", 60, "3-6", 1.25)
+
+    def words(s):  # noqa: ANN001, ANN202
+        return sum(sc["words"] for sc in s["scenes"])
+
+    assert fast["word_budget"] > slow["word_budget"] * 1.2
+    assert words(fast) > words(slow)
+    assert len(fast["scenes"]) >= len(slow["scenes"])
+
+
+def _make_script_s(topic: str, length: int, age: str, speed: float) -> dict:
+    import json as _json
+
+    from app.services.pipeline.knowledge import research
+    from app.services.pipeline.promptbuilder import SYSTEM_PROMPT, script_brief
+    from app.services.providers.text.local import LocalTextProvider
+
+    kb = research(topic)
+    params = {"topic": topic, "target_age": age, "length_seconds": length,
+              "language": "en", "voice": "female", "voice_speed": speed}
+    raw = LocalTextProvider().generate(
+        SYSTEM_PROMPT, script_brief(kb, params,
+                                    {"seed": 99, "lesson_count": 3}))
+    return _json.loads(raw)
