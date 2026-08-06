@@ -45,6 +45,12 @@ _REGISTRY: dict[str, dict[str, tuple[str, str, str, bool, str]]] = {
             "Local models via github.com/ollama/ollama — private, no key. "
             "Install Ollama, then: ollama pull qwen2.5:3b.",
         ),
+        "gemini": (
+            "app.services.providers.text.gemini", "GeminiTextProvider",
+            "Google Gemini Flash (free tier)", True,
+            "Free key from aistudio.google.com (no card, ~1.5M tokens/day). "
+            "Guided by the internal knowledge base and originality rules.",
+        ),
     },
     "image": {
         "local": (
@@ -70,6 +76,12 @@ _REGISTRY: dict[str, dict[str, tuple[str, str, str, bool, str]]] = {
             "AUTOMATIC1111 SD WebUI (GitHub) running on your own GPU with "
             "--api enabled. No key — fully local once set up.",
         ),
+        "pollinations": (
+            "app.services.providers.image.pollinations", "PollinationsImageProvider",
+            "Pollinations Flux (free, keyless)", False,
+            "pollinations.ai anonymous tier — construct-a-URL Flux images, "
+            "nothing stored, no account. Optional free key lifts rate limits.",
+        ),
     },
     "video": {
         "local": (
@@ -89,6 +101,12 @@ _REGISTRY: dict[str, dict[str, tuple[str, str, str, bool, str]]] = {
             "Runway Gen", True,
             "Runway image-to-video using the rendered keyframe and motion "
             "prompts (short clips are merged automatically).",
+        ),
+        "pollinations": (
+            "app.services.providers.video.pollinations", "PollinationsVideoProvider",
+            "Pollinations video (free, keyless, weekly credits)", False,
+            "pollinations.ai Seedance/Wan-Fast — no key, but a small weekly "
+            "free credit allowance; treat as a bonus, not bulk capacity.",
         ),
     },
     "voice": {

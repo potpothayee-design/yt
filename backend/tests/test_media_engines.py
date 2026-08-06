@@ -7,7 +7,7 @@ from PIL import Image
 
 from app.services.pipeline.promptbuilder import character_sheet
 from app.services.providers import provider_catalog
-from app.services.providers.base import ImagePrompt
+from app.services.providers.base import ImagePrompt, VideoPrompt
 from app.services.providers.image.local import LocalImageProvider
 from app.services.providers.music.local import LocalMusicProvider
 from app.services.providers.voice.local import LocalVoiceProvider
@@ -120,3 +120,30 @@ def test_piper_and_musicgen_graceful_when_not_installed():
     assert isinstance(ok2, bool) and msg2
     # in CI piper-tts is not installed -> helper must return None, not raise
     assert synthesize_via_piper("hello", "/tmp/x.wav", "female") is None or True
+
+
+def test_free_hosted_providers_in_catalog_and_urls(monkeypatch):
+    from app.services.providers.image.pollinations import build_image_url
+    from app.services.providers.text.gemini import _extract_json
+    from app.services.providers.video.pollinations import build_video_url
+
+    names = {(p["capability"], p["name"]) for p in provider_catalog()}
+    assert ("text", "gemini") in names
+    assert ("image", "pollinations") in names
+    assert ("video", "pollinations") in names
+
+    p = ImagePrompt(prompt="friendly sun", negative_prompt="dark, scary",
+                    width=1280, height=720, seed=7)
+    url = build_image_url(p)
+    assert url.startswith("https://image.pollinations.ai/prompt/")
+    assert "width=1280" in url and "height=720" in url and "seed=7" in url
+    assert "nologo=true" in url and "model=flux" in url and "safe=true" in url
+    assert "avoid" in url  # negative terms folded into the prompt
+
+    vp = build_video_url(VideoPrompt(prompt="sun dancing", negative_prompt="",
+                                     duration=7.0))
+    assert "duration=7" in vp and "aspectRatio=16%3A9" in vp
+    assert "model=seedance" in vp
+
+    assert _extract_json('```json\n{"a": 1}\n```') == '{"a": 1}'
+    assert _extract_json('here you go: {"a": 1} done') == '{"a": 1}'

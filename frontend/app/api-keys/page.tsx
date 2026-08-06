@@ -154,7 +154,8 @@ export default function ApiKeysPage() {
         <p className="text-sm text-slate-500 dark:text-slate-400">
           You can also set keys via environment variables (OPENAI_API_KEY,
           ANTHROPIC_API_KEY, STABILITY_API_KEY, ELEVENLABS_API_KEY, GOOGLE_TTS_API_KEY,
-          PIKA_API_KEY, RUNWAY_API_KEY) — see <code>.env.example</code>. Keys saved on
+          PIKA_API_KEY, RUNWAY_API_KEY, GEMINI_API_KEY, POLLINATIONS_KEY) — see
+          <code>.env.example</code>. Keys saved on
           this page take precedence; in production prefer secrets managers / GitHub
           Secrets over any database.
         </p>

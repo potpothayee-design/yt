@@ -59,6 +59,8 @@ class Settings(BaseSettings):
     GOOGLE_TTS_API_KEY: str = ""
     PIKA_API_KEY: str = ""
     RUNWAY_API_KEY: str = ""
+    GEMINI_API_KEY: str = ""
+    POLLINATIONS_KEY: str = ""
 
     TEXT_PROVIDER: str = "local"
     IMAGE_PROVIDER: str = "local"
@@ -134,6 +136,8 @@ class Settings(BaseSettings):
             "google-tts": self.GOOGLE_TTS_API_KEY,
             "pika": self.PIKA_API_KEY,
             "runway": self.RUNWAY_API_KEY,
+            "gemini": self.GEMINI_API_KEY,
+            "pollinations": self.POLLINATIONS_KEY,
         }.get(provider, "")
 
 

@@ -31,6 +31,19 @@ the local one instead of failing.
 > Vendor video/TTS APIs evolve. The Runway/Pika clients isolate their payload
 > shape in one small method — update that if your account uses a newer schema.
 
+## Free hosted tiers (no credit card)
+
+| Capability | Provider | Setup | Limits |
+|---|---|---|---|
+| Text | **Google Gemini Flash** | free key from [aistudio.google.com](https://aistudio.google.com) → paste on the API Keys page (capability: Text Generation) | ~1.5M tokens/day free; model defaults to `gemini-flash-latest` (`GEMINI_MODEL` override) |
+| Image | **Pollinations Flux** | none — keyless anonymous tier | unlimited free images (rate-limited); optional `POLLINATIONS_KEY` lifts limits |
+| Video | **Pollinations (Seedance/Wan-Fast)** | none — keyless | small **weekly** free credit allowance; on exhaustion the provider says so and you can switch back to the built-in Motion Engine |
+
+All three keep the pipeline's knowledge-base steering: Gemini still receives
+the curated topic research and originality constraints, and Pollinations
+receives the same consistent scene prompts (negative terms are folded into
+the prompt text because the free URL API has no negative field).
+
 ## Open-source GitHub providers (free, offline, no API keys)
 
 The registry ships with four providers backed by public open-source projects.
