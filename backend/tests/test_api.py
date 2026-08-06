@@ -87,3 +87,28 @@ def test_meta_endpoints(client: TestClient):
     assert [s["name"] for s in steps][:3] == ["research", "script", "storyboard"]
     ideas = client.get("/api/v1/meta/topic-ideas").json()
     assert len(ideas) >= 8
+
+
+def test_delete_project_removes_media_and_404s(client: TestClient, auth_headers):
+    create = client.post(
+        "/api/v1/projects", headers=auth_headers,
+        json={"topic": "DeleteMe", "params": {"topic": "DeleteMe",
+                                              "target_age": "3-6", "length_seconds": 15}},
+    )
+    assert create.status_code == 201
+    pid = create.json()["id"]
+
+    # simulate generated media on disk
+    from tests.conftest import TEST_MEDIA_ROOT
+    media_dir = TEST_MEDIA_ROOT / "projects" / str(pid)
+    media_dir.mkdir(parents=True)
+    (media_dir / "final.mp4").write_bytes(b"fake")
+
+    resp = client.delete(f"/api/v1/projects/{pid}", headers=auth_headers)
+    assert resp.status_code == 204
+    assert not media_dir.exists(), "media folder should be wiped"
+
+    gone = client.get(f"/api/v1/projects/{pid}", headers=auth_headers)
+    assert gone.status_code == 404
+    again = client.delete(f"/api/v1/projects/{pid}", headers=auth_headers)
+    assert again.status_code == 404

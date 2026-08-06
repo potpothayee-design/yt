@@ -6,6 +6,7 @@
 
 import { use, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { api, ApiError, media } from "@/lib/api";
 import type {
   Asset,
@@ -28,12 +29,28 @@ export default function ProjectDetailPage({
 }) {
   const { id } = use(params);
   const projectId = Number(id);
+  const router = useRouter();
   const [project, setProject] = useState<ProjectDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [actionMsg, setActionMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [sceneIndex, setSceneIndex] = useState(0);
   const [showUpload, setShowUpload] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const deleteProject = async () => {
+    if (!project) return;
+    const name = project.title || project.topic;
+    if (!window.confirm(`Delete "${name}" for good?\n\nThis removes the video, images, audio and all project data. This cannot be undone.`)) return;
+    setDeleting(true);
+    try {
+      await api.delete(`/api/v1/projects/${project.id}`);
+      router.replace("/projects");
+    } catch {
+      setError("Could not delete the project — please try again.");
+      setDeleting(false);
+    }
+  };
 
   const refresh = useCallback(async () => {
     try {
@@ -149,11 +166,22 @@ export default function ProjectDetailPage({
             </span>
           </div>
         </div>
-        {project.status === "ready_for_review" && (
-          <button className="btn-approve px-5 py-3 text-base" onClick={() => setShowUpload(true)}>
-            ✅ Approve Upload
+        <div className="flex items-center gap-2">
+          {project.status === "ready_for_review" && (
+            <button className="btn-approve px-5 py-3 text-base" onClick={() => setShowUpload(true)}>
+              ✅ Approve Upload
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={deleteProject}
+            disabled={deleting}
+            title="Delete project and all its files"
+            className="btn-secondary border-rose-300 px-4 py-3 text-rose-600 hover:bg-rose-50 disabled:opacity-50 dark:border-rose-900 dark:text-rose-400 dark:hover:bg-rose-950"
+          >
+            {deleting ? "Deleting…" : "🗑 Delete"}
           </button>
-        )}
+        </div>
       </div>
 
       {actionMsg && (

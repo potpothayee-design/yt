@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import shutil
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
@@ -111,9 +113,24 @@ def delete_project(
     project: Project = Depends(get_owned_project),
     db: Session = Depends(get_db),
 ) -> None:
+    """Delete a project for good: cancel active work, drop DB rows (jobs,
+    assets, uploads, logs cascade) and remove its media files from storage."""
+    running = (
+        db.query(PipelineJob)
+        .filter(PipelineJob.project_id == project.id,
+                PipelineJob.status.in_(("queued", "running", "cancelling")))
+        .all()
+    )
+    for job in running:
+        orchestrator.request_cancel(db, job)
+    if running:
+        db.flush()
     log_event(db, "INFO", f"project deleted: '{project.topic}'")
+    project_id = project.id
     db.delete(project)
     db.commit()
+    # best-effort media cleanup — DB is already consistent, disk is secondary
+    shutil.rmtree(orchestrator._project_dir(project_id), ignore_errors=True)
 
 
 # ---------------------------------------------------------------------------
