@@ -12,7 +12,7 @@ Built with Next.js 14 · TypeScript · Tailwind CSS.
 | | |
 |---|---|
 | 🖼️ **Text to Image** | Prompt → 4K image. 3 locked-in styles, 9:16 / 16:9 / 1:1, batch up to 4 at a time. |
-| 🎬 **Image to Video** | Upload (or generate) frames → 5–8 second cinematic clip with real camera moves. |
+| 🎬 **Image to Video** | Two free engines: **real AI diffusion motion** (Wan/LTX on free GPUs) or **instant cinematic camera** motion. |
 | ⚡ **7 Viral Presets** | One tap loads the full prompt, style and aspect ratio. |
 | 🗂️ **Gallery** | Saved on your device (IndexedDB), survives refresh. Download MP4 / 4K PNG, copy any prompt. |
 | 🌑 **Dark UI** | Seedance-style interface, fully mobile responsive. |
@@ -55,13 +55,29 @@ automatically retries across `flux → turbo → flux-realism` with a fresh seed
 **4K export.** Pollinations gets slow above ~1.5K per side, so we render at a fast master size and progressively
 upscale to true 4K (2160×3840 / 3840×2160) on a canvas at download time. You get real 4K PNGs without the timeouts.
 
-**Video — rendered locally in your browser.** Every free hosted video model (Wan2.1, SVD, …) is gated, queued or
-cold-booting most of the time, which is exactly how the paid tools break. So instead the app animates your keyframes on
-a `<canvas>` with real cinematography — eased dolly/pan/crane/orbit/handheld moves, multi-frame crossfades, film grain,
-vignette, and fade in/out — and records it with `MediaRecorder` to a genuine MP4 (H.264, WebM fallback).
+**Video — two engines, both free, pick per render.**
 
-That means video generation has **zero queue, zero cold start, zero credits, and a 100% success rate.** It works
-offline once the page is loaded.
+**1. Real AI motion (default).** True image-to-video diffusion — objects, characters and materials actually move.
+Runs open-source **Wan 2.1 / LTX-Video / SVD** on free community Hugging Face Spaces. No account, no card, no credits.
+The honest cost is a **queue**: shared GPUs mean 1–8 minutes, and Spaces sometimes sleep or hit daily quota. The app
+tries three Spaces in order before giving up.
+
+**2. Cinematic camera (instant fallback).** Animates your frames on a `<canvas>` with eased dolly/pan/crane/orbit/
+handheld moves, crossfades, grain, vignette and fades, recorded via `MediaRecorder` to H.264 MP4. The subject itself
+doesn't move — but it renders in seconds, works offline, and **never fails**.
+
+If the AI engines are all busy, the app automatically falls back to camera motion so you always walk away with a clip.
+
+### Why not the "free" video APIs?
+
+Checked and rejected, so you don't have to:
+
+| Option | Verdict |
+|---|---|
+| Pollinations `/video` (Wan, Veo, Seedance) | **Not free.** Every model is `paid_only`. Costs Pollen credits (~$1/Pollen); the free grant is 1.5 Pollen/week ≈ 3 clips. |
+| Kling / Hailuo / Luma / Runway free tiers | Daily credits, watermarks, login, non-commercial. Exactly the treadmill this replaces. |
+| HF Inference API (serverless) | Video models aren't reliably served; routes to paid providers. |
+| **HF Spaces (Wan/LTX/SVD)** | ✅ **Genuinely free, no login, no watermark** — community GPUs, queued. This is what we use. |
 
 > Nothing you make is ever uploaded to a server of ours — there is no backend at all.
 
@@ -118,6 +134,7 @@ components/
   Icons.tsx         Inline SVG icon set
 lib/
   pollinations.ts   Free image engine + multi-model retry
+  aivideo.ts        Real AI motion via free Hugging Face Spaces (Wan/LTX/SVD)
   video.ts          Canvas cinema renderer + MediaRecorder encoding
   storage.ts        IndexedDB gallery persistence
   download.ts       4K upscaling, blob download, clipboard
@@ -133,6 +150,8 @@ lib/
 - **Video downloads as `.webm` instead of `.mp4`?** Your browser lacks H.264 canvas recording (mostly Firefox).
   Chrome, Edge and Safari produce MP4. WebM uploads fine to YouTube, TikTok and Instagram anyway.
 - **First image is slow?** Pollinations cold-starts at 15–40s. Later renders are much faster.
+- **AI motion says "engines busy"?** Free community GPUs are shared and genuinely run out. Retry in a few minutes,
+  or switch to the Cinematic camera engine for an instant result. There is no way to skip the queue without paying.
 - **Keep the tab visible while rendering video** — browsers throttle background tabs, which slows the capture.
 - **Dev server 500s after running `npm run build`?** The production build overwrites the `.next` folder the dev
   server is watching. Fix: `rm -rf .next && npm run dev`.

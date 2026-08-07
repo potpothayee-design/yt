@@ -4,10 +4,13 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { ASPECTS, ASPECT_MAP, STYLES, type AspectId, type StyleId } from '@/lib/styles'
 import { fetchImageBlob, randomSeed } from '@/lib/pollinations'
 import { MOTIONS, loadImage, renderVideo, supportsRecording, type MotionId } from '@/lib/video'
+import { generateAiVideo } from '@/lib/aivideo'
 import { downloadBlob, slugify } from '@/lib/download'
 import type { GalleryItem } from '@/lib/types'
-import { IconDownload, IconSparkles, IconUpload, IconVideo, IconClose, IconPlus } from './Icons'
+import { IconDownload, IconSparkles, IconUpload, IconVideo, IconClose, IconPlus, IconBolt } from './Icons'
 import { useToast } from './Toast'
+
+type Engine = 'ai' | 'camera'
 
 interface Source {
   id: string
@@ -32,7 +35,8 @@ export default function ImageToVideo({
   const [busy, setBusy] = useState(false)
   const [progress, setProgress] = useState(0)
   const [status, setStatus] = useState('')
-  const [result, setResult] = useState<{ url: string; blob: Blob; ext: string } | null>(null)
+  const [result, setResult] = useState<{ url: string; blob: Blob; ext: string; engine: string } | null>(null)
+  const [engine, setEngine] = useState<Engine>('ai')
   const [canRecord, setCanRecord] = useState(true)
   const [genStyle, setGenStyle] = useState<StyleId>('photoreal')
   const fileRef = useRef<HTMLInputElement>(null)
@@ -106,9 +110,67 @@ export default function ImageToVideo({
     }
     setBusy(true)
     setProgress(0)
-    setStatus('Loading frames…')
+    setStatus('Preparing…')
     setResult(null)
+
+    const finish = (blob: Blob, mime: string, ext: string, engineTag: string, w: number, h: number) => {
+      const url = URL.createObjectURL(blob)
+      setResult({ url, blob, ext, engine: engineTag })
+      const item: GalleryItem = {
+        id: `vid_${Date.now()}`,
+        kind: 'video',
+        url,
+        mime,
+        prompt: motionPrompt || motion,
+        rawPrompt: motionPrompt,
+        style: null,
+        aspect,
+        engine: engineTag,
+        width: w,
+        height: h,
+        durationSec: duration,
+        createdAt: Date.now(),
+      }
+      onSaved(item, blob)
+    }
+
     try {
+      // ---- Path 1: real AI diffusion motion on free community GPUs ----
+      if (engine === 'ai') {
+        if (!motionPrompt.trim()) {
+          toast('Describe the motion you want — the AI engine needs a prompt.', 'error')
+          setBusy(false)
+          return
+        }
+        try {
+          const srcBlob = await (await fetch(sources[0].url)).blob()
+          const out = await generateAiVideo({
+            image: srcBlob,
+            prompt: motionPrompt,
+            durationSec: duration,
+            aspect,
+            onStatus: setStatus,
+          })
+          // Read the true output dimensions rather than storing 0x0.
+          const dims = await new Promise<{ w: number; h: number }>((resolve) => {
+            const v = document.createElement('video')
+            v.preload = 'metadata'
+            v.onloadedmetadata = () => resolve({ w: v.videoWidth, h: v.videoHeight })
+            v.onerror = () => resolve({ w: 0, h: 0 })
+            v.src = URL.createObjectURL(out.blob)
+          })
+          finish(out.blob, out.mime, out.ext, `${out.model} (free GPU)`, dims.w, dims.h)
+          toast(`Real AI motion generated with ${out.model}`, 'success')
+          return
+        } catch (err) {
+          if ((err as Error)?.name === 'AbortError') return
+          // Never dead-end: fall through to the always-available renderer.
+          toast('Free AI GPUs are busy — falling back to cinematic camera motion.', 'info')
+          setStatus('Falling back to camera motion…')
+        }
+      }
+
+      // ---- Path 2: guaranteed local canvas cinematography ----
       const imgs = await Promise.all(sources.map((s) => loadImage(s.url)))
       setStatus('Rendering cinematic motion…')
       const out = await renderVideo({
@@ -118,26 +180,7 @@ export default function ImageToVideo({
         motion,
         onProgress: setProgress,
       })
-      const url = URL.createObjectURL(out.blob)
-      setResult({ url, blob: out.blob, ext: out.ext })
-
-      const id = `vid_${Date.now()}`
-      const item: GalleryItem = {
-        id,
-        kind: 'video',
-        url,
-        mime: out.mime,
-        prompt: motionPrompt || motion,
-        rawPrompt: motionPrompt,
-        style: null,
-        aspect,
-        engine: `canvas-cinema:${motion}`,
-        width: out.width,
-        height: out.height,
-        durationSec: out.durationSec,
-        createdAt: Date.now(),
-      }
-      onSaved(item, out.blob)
+      finish(out.blob, out.mime, out.ext, `camera:${motion}`, out.width, out.height)
       toast(`Video ready — ${out.width}×${out.height} ${out.ext.toUpperCase()}`, 'success')
     } catch (err) {
       if ((err as Error)?.name === 'AbortError') return
@@ -146,7 +189,7 @@ export default function ImageToVideo({
       setBusy(false)
       setStatus('')
     }
-  }, [sources, aspect, duration, motion, motionPrompt, onSaved, toast])
+  }, [sources, aspect, duration, motion, motionPrompt, engine, onSaved, toast])
 
   const ratioClass = ASPECT_MAP[aspect].ratioClass
 
@@ -246,7 +289,51 @@ export default function ImageToVideo({
         </div>
 
         <div>
-          <div className="label">Camera move</div>
+          <div className="label">
+            <IconBolt width={12} height={12} />
+            Motion engine
+          </div>
+          <div className="grid gap-2">
+            <button
+              onClick={() => setEngine('ai')}
+              className={`rounded-xl border p-3 text-left transition-all ${
+                engine === 'ai'
+                  ? 'border-brand-500/60 bg-brand-500/10'
+                  : 'border-white/10 bg-white/[0.02] hover:border-white/25'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-[13px] font-semibold text-zinc-100">✨ Real AI motion</span>
+                <span className="chip !text-[9px] !text-emerald-300">FREE</span>
+              </div>
+              <p className="mt-1 text-[10.5px] leading-relaxed text-zinc-500">
+                True diffusion — objects and characters actually move. Runs Wan / LTX on free community GPUs.
+                <span className="text-amber-300/90"> Queued: can take 1–8 min, and may be busy.</span> Falls back
+                automatically.
+              </p>
+            </button>
+            <button
+              onClick={() => setEngine('camera')}
+              className={`rounded-xl border p-3 text-left transition-all ${
+                engine === 'camera'
+                  ? 'border-brand-500/60 bg-brand-500/10'
+                  : 'border-white/10 bg-white/[0.02] hover:border-white/25'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-[13px] font-semibold text-zinc-100">🎥 Cinematic camera</span>
+                <span className="chip !text-[9px] !text-sky-300">INSTANT</span>
+              </div>
+              <p className="mt-1 text-[10.5px] leading-relaxed text-zinc-500">
+                Camera moves over your frames, rendered locally in seconds. The subject itself doesn&apos;t move, but
+                it never queues and never fails.
+              </p>
+            </button>
+          </div>
+        </div>
+
+        <div className={engine === 'ai' ? 'opacity-40' : ''}>
+          <div className="label">Camera move {engine === 'ai' && '· fallback only'}</div>
           <div className="grid grid-cols-2 gap-1.5">
             {MOTIONS.map((m) => (
               <button
@@ -311,10 +398,18 @@ export default function ImageToVideo({
           ) : (
             <>
               <IconVideo width={15} height={15} />
-              Render {duration}s video
+              {engine === 'ai' ? `Generate AI motion (${duration}s)` : `Render ${duration}s video`}
             </>
           )}
         </button>
+
+        {engine === 'ai' && busy && (
+          <p className="rounded-lg border border-amber-500/25 bg-amber-500/10 p-2.5 text-[10.5px] leading-relaxed text-amber-200">
+            Waiting on a free shared GPU. This is the honest cost of free AI motion — there&apos;s no queue to skip
+            without paying. Keep this tab open; if every engine is busy we&apos;ll render camera motion instead so you
+            always get a clip.
+          </p>
+        )}
 
         {!canRecord && (
           <p className="rounded-lg border border-amber-500/25 bg-amber-500/10 p-2.5 text-[10.5px] leading-relaxed text-amber-200">
@@ -324,9 +419,9 @@ export default function ImageToVideo({
         )}
 
         <p className="rounded-lg border border-white/[0.07] bg-black/25 p-2.5 text-[10.5px] leading-relaxed text-zinc-600">
-          Video renders <span className="text-zinc-400">locally in your browser</span> — real camera moves, film grain,
-          vignette and fades, encoded to MP4/WebM. No queue, no cold starts, no credits, and it never fails because of
-          someone else&apos;s rate limit.
+          Both engines are <span className="text-zinc-400">completely free with no credits and no account</span>. AI
+          motion borrows free community GPUs (so it queues); camera motion renders on your own device (so it&apos;s
+          instant). Between them you always get a clip.
         </p>
       </div>
 
@@ -352,6 +447,9 @@ export default function ImageToVideo({
           <figure className="card animate-fadeup max-w-sm overflow-hidden">
             <div className={`${ratioClass} w-full bg-black`}>
               <video src={result.url} controls autoPlay loop muted playsInline className="h-full w-full object-cover" />
+            </div>
+            <div className="border-b border-white/[0.07] px-2.5 py-1.5">
+              <span className="chip !text-[10px]">{result.engine}</span>
             </div>
             <figcaption className="flex gap-1.5 p-2.5">
               <button
