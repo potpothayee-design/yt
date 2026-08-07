@@ -77,8 +77,15 @@ npx vercel --prod
 ```
 
 ### GitHub Pages
-Push to `main` and the included workflow (`.github/workflows/deploy.yml`) builds and publishes automatically.
-Enable it once under **Settings → Pages → Source → GitHub Actions**.
+A ready-made workflow ships at [`deploy/github-pages.yml`](deploy/github-pages.yml). Activate it with:
+
+```bash
+mkdir -p .github/workflows
+cp deploy/github-pages.yml .github/workflows/deploy.yml
+git add .github/workflows/deploy.yml && git commit -m "ci: enable Pages" && git push
+```
+
+Then set **Settings → Pages → Source → GitHub Actions**. See [`deploy/README.md`](deploy/README.md) for details.
 
 To build a static bundle yourself:
 
