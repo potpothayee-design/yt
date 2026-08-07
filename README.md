@@ -33,6 +33,8 @@ Built with Next.js 14 · TypeScript · Tailwind CSS.
 
 ---
 
+> 🆕 **New here? Read [SETUP.md](SETUP.md)** — plain-language setup, usage and troubleshooting.
+
 ## 🚀 Run locally
 
 ```bash
