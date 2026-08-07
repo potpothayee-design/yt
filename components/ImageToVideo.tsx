@@ -75,12 +75,18 @@ export default function ImageToVideo({
     setBusy(true)
     setStatus('Generating keyframe…')
     try {
-      const { blob } = await fetchImageBlob({
+      const { blob, remoteUrl } = await fetchImageBlob({
         prompt: motionPrompt,
         style: genStyle,
         aspect,
         seed: randomSeed(),
       })
+      if (remoteUrl) {
+        // Without local pixel data the canvas would be tainted and the
+        // recording would fail silently — better to say so up front.
+        toast('Your browser blocked pixel access for this render, so it can\u2019t be animated. Try again.', 'error')
+        return
+      }
       setSources((s) =>
         [...s, { id: `gen_${Date.now()}`, url: URL.createObjectURL(blob), label: 'AI keyframe' }].slice(0, 4),
       )

@@ -24,6 +24,8 @@ interface Result {
   finalPrompt: string
   seed: number
   model: string
+  /** True when we only have a remote URL (no local pixel data). */
+  remote?: boolean
 }
 
 export default function TextToImage({
@@ -51,6 +53,7 @@ export default function TextToImage({
   const [results, setResults] = useState<Result[]>([])
   const [copied, setCopied] = useState(false)
   const [exporting, setExporting] = useState<string | null>(null)
+  const [remoteNotice, setItemsRemoteNotice] = useState(false)
   const abortRef = useRef(false)
   const toast = useToast()
 
@@ -70,7 +73,7 @@ export default function TextToImage({
       for (let i = 0; i < count; i++) {
         if (abortRef.current) break
         setStatus(count > 1 ? `Rendering image ${i + 1} of ${count}…` : 'Rendering your scene…')
-        const { blob, finalPrompt, width, height, model, seed } = await fetchImageBlob(
+        const { blob, finalPrompt, width, height, model, seed, remoteUrl } = await fetchImageBlob(
           { prompt, style, aspect, seed: randomSeed() },
           {
             onAttempt: (m, attempt) =>
@@ -84,8 +87,8 @@ export default function TextToImage({
           },
         )
         const id = `img_${Date.now()}_${i}`
-        const url = URL.createObjectURL(blob)
-        const r: Result = { id, url, blob, finalPrompt, seed, model }
+        const url = remoteUrl ?? URL.createObjectURL(blob)
+        const r: Result = { id, url, blob, finalPrompt, seed, model, remote: Boolean(remoteUrl) }
         made.push(r)
         setResults((prev) => [...prev, r])
 
@@ -104,7 +107,9 @@ export default function TextToImage({
           height,
           createdAt: Date.now(),
         }
-        onSaved(item, blob)
+        // Only persist real pixel data; a remote-only result can't be stored.
+        if (!remoteUrl) onSaved(item, blob)
+        else setItemsRemoteNotice(true)
       }
       if (made.length) toast(`${made.length} image${made.length > 1 ? 's' : ''} ready — saved to gallery`, 'success')
     } catch (err) {
@@ -118,13 +123,19 @@ export default function TextToImage({
   const handleDownload = async (r: Result) => {
     setExporting(r.id)
     try {
-      const png = await upscaleToBlob(r.blob, aspect, 'image/png')
+      const png = await upscaleToBlob(r.remote ? r.url : r.blob, aspect, 'image/png')
       const { width, height } = ASPECT_MAP[aspect]
       downloadBlob(png, `${slugify(prompt)}-${width}x${height}.png`)
       toast(`Downloaded 4K PNG (${width}×${height})`, 'success')
     } catch {
-      downloadBlob(r.blob, `${slugify(prompt)}.jpg`)
-      toast('Downloaded original resolution', 'info')
+      if (r.remote) {
+        // Can't touch the pixels — open it so the user can save it manually.
+        window.open(r.url, '_blank', 'noopener,noreferrer')
+        toast('Opened in a new tab — long-press or right-click to save', 'info')
+      } else {
+        downloadBlob(r.blob, `${slugify(prompt)}.jpg`)
+        toast('Downloaded original resolution', 'info')
+      }
     } finally {
       setExporting(null)
     }
@@ -331,6 +342,14 @@ export default function TextToImage({
           </div>
         )}
 
+        {remoteNotice && (
+          <p className="rounded-lg border border-amber-500/25 bg-amber-500/10 p-2.5 text-[11px] leading-relaxed text-amber-200">
+            Your browser blocked direct pixel access for some renders, so they&apos;re shown straight from the source.
+            They still display and download, but can&apos;t be saved to the gallery or animated. Reloading the page
+            usually clears this.
+          </p>
+        )}
+
         {results.length > 0 && (
           <div className={`grid gap-3 ${results.length > 1 ? 'sm:grid-cols-2' : 'max-w-md'}`}>
             {results.map((r) => (
@@ -358,7 +377,13 @@ export default function TextToImage({
                     )}
                   </button>
                   <button
-                    onClick={() => onAnimate(r.url, prompt, aspect)}
+                    onClick={() => {
+                      if (r.remote) {
+                        toast('This render can\u2019t be animated — regenerate it first.', 'error')
+                        return
+                      }
+                      onAnimate(r.url, prompt, aspect)
+                    }}
                     className="btn-ghost btn-sm"
                     title="Animate this image"
                   >

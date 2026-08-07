@@ -134,6 +134,10 @@ lib/
   Chrome, Edge and Safari produce MP4. WebM uploads fine to YouTube, TikTok and Instagram anyway.
 - **First image is slow?** Pollinations cold-starts at 15–40s. Later renders are much faster.
 - **Keep the tab visible while rendering video** — browsers throttle background tabs, which slows the capture.
+- **Dev server 500s after running `npm run build`?** The production build overwrites the `.next` folder the dev
+  server is watching. Fix: `rm -rf .next && npm run dev`.
+- **Rare "blocked pixel access" warning?** If your browser refuses direct access to the generated pixels, the app
+  still shows and downloads the image, but it can't be saved to the gallery or animated. Regenerating clears it.
 
 ## 📄 License
 
