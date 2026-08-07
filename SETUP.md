@@ -20,6 +20,8 @@ For a permanent link you can share and use on your phone, do Option 2.
 No terminal, no code. This gives you a real URL like `tiny-workers-studio.vercel.app`
 that works forever, on any device.
 
+✅ **The code is already merged into `main`** — nothing to do first, just deploy.
+
 1. Go to **[vercel.com/new](https://vercel.com/new)**
 2. Sign in with **GitHub** (free, no card)
 3. Click **Import** next to your `yt` repository
@@ -28,9 +30,16 @@ that works forever, on any device.
 
 **Do not add any environment variables.** There are none. It works as-is.
 
-> **First, merge the code:** the app currently lives on the branch `arena/019fdc8f-yt`.
-> Merge [Pull Request #2](https://github.com/potpothayee-design/yt/pull/2) into `main` first,
-> or pick that branch in Vercel's import screen.
+### Got a 404 after deploying?
+
+That means Vercel built the repo *before* the app code reached `main`. The fix is to
+redeploy — it does **not** mean anything is broken:
+
+1. Open your project on Vercel → **Deployments**
+2. Click the **⋯** menu on the most recent one → **Redeploy**
+3. Make sure **Use existing Build Cache** is **unchecked**
+
+Alternatively just delete the Vercel project and re-import it. Either way works.
 
 ### Updating later
 Any push to `main` redeploys automatically. Nothing else to do.
