@@ -4,17 +4,13 @@ import type { AspectId } from './styles'
  * TRUE AI MOTION ENGINE (free, no credits, no card).
  *
  * Runs open-source image-to-video diffusion models (Wan / LTX / SVD) on free
- * community Hugging Face Spaces via the Gradio client. Real diffusion motion:
- * objects, characters and materials actually move, unlike a camera-only pan.
+ * community Hugging Face Spaces via the Gradio client. Real diffusion motion —
+ * objects, characters and materials actually move.
  *
- * The honest trade-offs, surfaced in the UI rather than hidden:
- *  - Shared community GPUs => you wait in a queue (often 1-8 min, sometimes more)
- *  - Spaces sleep, restart, hit daily quota, or get deleted without notice
- *  - Output is typically ~480-720p, 2-5s
- *
- * Because any single Space is unreliable, we try a chain of them in order and
- * fall back to the local canvas renderer if they all fail. That way "free"
- * never means "broken".
+ * Honest trade-offs (surfaced in the UI): shared community GPUs mean a queue
+ * (often 1–8 min); Spaces sleep, restart, hit daily quota, or get deleted.
+ * Because any single Space is unreliable we try a chain of them in order and
+ * fall back to the local canvas renderer if they all fail.
  */
 
 export interface SpaceTarget {
@@ -25,14 +21,16 @@ export interface SpaceTarget {
   /** Named gradio endpoint to call. */
   api: string
   /** Builds the payload for this Space's signature. */
-  build: (args: { image: Blob; prompt: string; durationSec: number; aspect: AspectId }) => unknown[] | Record<string, unknown>
+  build: (args: {
+    image: Blob
+    prompt: string
+    durationSec: number
+    aspect: AspectId
+  }) => unknown[] | Record<string, unknown>
   notes?: string
 }
 
-/**
- * Ordered by (speed x reliability). These are public, free, no-login Spaces.
- * Signatures differ per Space, so each gets its own payload builder.
- */
+/** Ordered by speed x reliability. Signatures differ per Space, so each builds its own payload. */
 export const SPACES: SpaceTarget[] = [
   {
     id: 'Lightricks/ltx-video-distilled',
@@ -41,7 +39,7 @@ export const SPACES: SpaceTarget[] = [
     api: '/image_to_video',
     notes: 'Fastest free option — usually the shortest queue.',
     build: ({ image, prompt, durationSec }) => ({
-      image: image,
+      image,
       prompt,
       negative_prompt: 'worst quality, blurry, jittery, distorted, watermark, text',
       duration: Math.min(durationSec, 5),
@@ -112,7 +110,6 @@ function extractVideoUrl(data: unknown): string | null {
     }
     if (typeof node === 'object') {
       const o = node as Record<string, unknown>
-      // Gradio FileData: { url, path, video: {...} }
       for (const key of ['url', 'video', 'path', 'data', 'value']) {
         if (key in o) {
           const hit = walk(o[key], depth + 1)
@@ -129,10 +126,7 @@ function extractVideoUrl(data: unknown): string | null {
   return walk(data)
 }
 
-/**
- * Try one Space. Resolves with a video Blob or throws.
- * Kept deliberately defensive: Spaces change signatures without warning.
- */
+/** Try one Space. Resolves with a video Blob or throws. */
 async function trySpace(target: SpaceTarget, opts: AiVideoOptions): Promise<AiVideoResult> {
   const { image, prompt, durationSec, aspect, token, onStatus } = opts
 
@@ -140,10 +134,8 @@ async function trySpace(target: SpaceTarget, opts: AiVideoOptions): Promise<AiVi
 
   // Imported lazily so the ~100KB client never lands in the initial bundle.
   const { Client } = await import('@gradio/client')
-
   const client = await Client.connect(target.id, {
     ...(token ? { hf_token: token as `hf_${string}` } : {}),
-    events: ['status'],
   })
 
   onStatus?.(`Queued on ${target.label} — free community GPU, this can take a few minutes…`)
@@ -161,19 +153,10 @@ async function trySpace(target: SpaceTarget, opts: AiVideoOptions): Promise<AiVi
   if (blob.size < 2048) throw new Error(`${target.label} returned an empty file`)
 
   const ext = url.match(/\.(mp4|webm|gif)/i)?.[1]?.toLowerCase() ?? 'mp4'
-  return {
-    blob,
-    mime: blob.type || `video/${ext}`,
-    ext,
-    space: target.id,
-    model: target.model,
-  }
+  return { blob, mime: blob.type || `video/${ext}`, ext, space: target.id, model: target.model }
 }
 
-/**
- * Generate real AI motion, walking the Space chain until one succeeds.
- * Throws only if every Space fails — the caller then falls back to canvas.
- */
+/** Generate real AI motion, walking the Space chain until one succeeds. */
 export async function generateAiVideo(opts: AiVideoOptions): Promise<AiVideoResult> {
   const errors: string[] = []
 

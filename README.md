@@ -1,125 +1,96 @@
 # 📦 Tiny Workers Studio
 
-**Free, unlimited AI generator for "Tiny Workers + Cardboard Puzzle + Pixar" images and videos.**
-No credits. No watermark. No login. No paid API. It can't run out — because there's nothing to run out of.
+A free, keyless AI generator for **Tiny Workers / Cardboard Puzzle / Pixar** style
+images and videos. No credits, no watermark, no login, no paid API.
 
-Built with Next.js 14 · TypeScript · Tailwind CSS.
+Built with **Next.js 14 · React 18 · TypeScript · Tailwind CSS**. Everything runs
+in the browser — there is no backend.
 
 ---
 
-## ✨ Features
+## Features
 
 | | |
 |---|---|
-| 🖼️ **Text to Image** | Prompt → 4K image. 3 locked-in styles, 9:16 / 16:9 / 1:1, batch up to 4 at a time. |
-| 🎬 **Image to Video** | Two free engines: **real AI diffusion motion** (Wan/LTX on free GPUs) or **instant cinematic camera** motion. |
-| ⚡ **7 Viral Presets** | One tap loads the full prompt, style and aspect ratio. |
+| 🖼️ **Text to Image** | Prompt → image in 3 locked-in styles (Photoreal, Pixar 3D, Kraft Cardboard), 9:16 / 16:9 / 1:1, batch up to 4. |
+| 🎬 **Image to Video** | Two engines: real AI diffusion motion (Wan / LTX / SVD on free community GPUs) or instant cinematic camera motion rendered on-device. |
+| ⚡ **7 Viral Presets** | One tap loads a full prompt + style + aspect ratio. |
 | 🗂️ **Gallery** | Saved on your device (IndexedDB), survives refresh. Download MP4 / 4K PNG, copy any prompt. |
-| 🌑 **Dark UI** | Seedance-style interface, fully mobile responsive. |
-
-### Styles
-- **🔧 Photorealistic Tiny Workers** — macro realism, tilt-shift diorama, 100mm lens look
-- **🎬 Pixar 3D Cartoon** — emotional animation still, subsurface scattering, warm key light
-- **📦 Kraft Cardboard Puzzle** — corrugated papercraft, laser-cut jigsaw pieces, studio softbox
-
-### The 7 presets
-1. 🏎️ Tiny Workers Building Cardboard Ferrari
-2. 🔩 Tiny Workers Disassembling Hot Wheels
-3. 🥺 Pixar Sad Cardboard Car
-4. ✨ Toy Story Cardboard Comes Alive
-5. 🔊 ASMR Cardboard Engine
-6. 🪄 Dual Restoration Split Screen
-7. 🌃 3AM Tiny City
+| 🌑 **Dark UI** | Mobile responsive, Seedance-style dark interface. |
 
 ---
 
-> 🆕 **New here? Read [SETUP.md](SETUP.md)** — plain-language setup, usage and troubleshooting.
+## Run locally
 
-## 🚀 Run locally
+Requires [Node.js](https://nodejs.org) 18.17+ (LTS recommended).
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open <http://localhost:3000>. The dev server binds `0.0.0.0` so it also works from another device on your network.
+Open <http://localhost:3000>. The dev server binds `0.0.0.0`, so it also works
+from another device on your network.
 
-**No `.env` needed.** Copy `.env.example` → `.env` only if you want to experiment with an optional Hugging Face token; the app is fully functional without one.
+**No `.env` needed.** Copy `.env.example` → `.env` only if you want the optional
+Hugging Face token; the app is fully functional without one.
+
+### Production
+
+```bash
+npm run build
+npm start
+```
+
+Deploy anywhere that runs Node (Vercel, Netlify, Railway, your own VPS). Zero
+configuration and no environment variables are required.
 
 ---
 
-## 🧠 How it stays free forever
+## How it works (and stays free)
 
-**Images — [Pollinations](https://pollinations.ai) (Flux).** Free, keyless, unlimited. Called **directly from your
-browser**, so there's no backend to rate-limit, no API key to leak, and no server cost. If one model is busy the app
-automatically retries across `flux → turbo → flux-realism` with a fresh seed.
+**Images — [Pollinations](https://pollinations.ai) (Flux).** Free, keyless,
+unlimited, called **directly from the browser**, so there is no server to
+rate-limit and no key to leak. If one model is busy the app retries across
+`flux → turbo → flux-realism` with a fresh seed.
 
-**4K export.** Pollinations gets slow above ~1.5K per side, so we render at a fast master size and progressively
-upscale to true 4K (2160×3840 / 3840×2160) on a canvas at download time. You get real 4K PNGs without the timeouts.
+**4K export.** Pollinations gets slow above ~1.5K per side, so the app renders at
+a fast master size and progressively upscales to true 4K (2160×3840 / 3840×2160)
+on a canvas at download time.
 
-**Video — two engines, both free, pick per render.**
+**Video — two engines, pick per render:**
 
-**1. Real AI motion (default).** True image-to-video diffusion — objects, characters and materials actually move.
-Runs open-source **Wan 2.1 / LTX-Video / SVD** on free community Hugging Face Spaces. No account, no card, no credits.
-The honest cost is a **queue**: shared GPUs mean 1–8 minutes, and Spaces sometimes sleep or hit daily quota. The app
-tries three Spaces in order before giving up.
+1. **Real AI motion** — image-to-video diffusion (Wan 2.1 / LTX / SVD) on free
+   community Hugging Face Spaces. No account, no card. The cost is a queue:
+   shared GPUs mean 1–8 minutes, and Spaces sometimes sleep or hit daily quota.
+   The app tries three Spaces in order before giving up.
+2. **Cinematic camera** — animates your frames on a `<canvas>` with eased
+   dolly/pan/crane/orbit/handheld moves, crossfades, grain and vignette, recorded
+   to H.264 MP4 via `MediaRecorder`. Renders in seconds, works offline, never fails.
 
-**2. Cinematic camera (instant fallback).** Animates your frames on a `<canvas>` with eased dolly/pan/crane/orbit/
-handheld moves, crossfades, grain, vignette and fades, recorded via `MediaRecorder` to H.264 MP4. The subject itself
-doesn't move — but it renders in seconds, works offline, and **never fails**.
-
-If the AI engines are all busy, the app automatically falls back to camera motion so you always walk away with a clip.
-
-### Why not the "free" video APIs?
-
-Checked and rejected, so you don't have to:
-
-| Option | Verdict |
-|---|---|
-| Pollinations `/video` (Wan, Veo, Seedance) | **Not free.** Every model is `paid_only`. Costs Pollen credits (~$1/Pollen); the free grant is 1.5 Pollen/week ≈ 3 clips. |
-| Kling / Hailuo / Luma / Runway free tiers | Daily credits, watermarks, login, non-commercial. Exactly the treadmill this replaces. |
-| HF Inference API (serverless) | Video models aren't reliably served; routes to paid providers. |
-| **HF Spaces (Wan/LTX/SVD)** | ✅ **Genuinely free, no login, no watermark** — community GPUs, queued. This is what we use. |
+If the AI engines are all busy the app automatically falls back to camera motion,
+so you always walk away with a clip.
 
 > Nothing you make is ever uploaded to a server of ours — there is no backend at all.
 
 ---
 
-## 📦 Deploy
+## Network note
 
-### Vercel (recommended)
-Import the repo and hit deploy. Zero configuration — no environment variables required.
+Images and AI-motion video call **third-party services from your browser**:
 
-```bash
-npx vercel --prod
-```
+- `image.pollinations.ai` (images)
+- `*.hf.space` (AI-motion video)
 
-### GitHub Pages
-A ready-made workflow ships at [`deploy/github-pages.yml`](deploy/github-pages.yml). Activate it with:
-
-```bash
-mkdir -p .github/workflows
-cp deploy/github-pages.yml .github/workflows/deploy.yml
-git add .github/workflows/deploy.yml && git commit -m "ci: enable Pages" && git push
-```
-
-Then set **Settings → Pages → Source → GitHub Actions**. See [`deploy/README.md`](deploy/README.md) for details.
-
-To build a static bundle yourself:
-
-```bash
-BASE_PATH=/yt npm run build:static   # outputs ./out
-```
-
-`BASE_PATH` must match your repo name when serving from `https://<user>.github.io/<repo>/`.
-Omit it for a custom domain or a `<user>.github.io` repo.
-
-### Any static host
-`./out` is a plain static folder — drop it on Netlify, Cloudflare Pages, S3, or anything else.
+These need to be reachable from wherever the browser runs. If you are behind a
+restricted network or a sandbox that only allows certain domains (GitHub, npm,
+etc.), image generation and AI motion will fail there — but the **cinematic
+camera** renderer, uploads, presets and gallery still work, because they are
+100% local. Run on your own machine or a normal host and everything works.
 
 ---
 
-## 🗺️ Project structure
+## Project structure
 
 ```
 app/
@@ -147,19 +118,21 @@ lib/
 
 ---
 
-## ❓ Notes
+## Troubleshooting
 
-- **Video downloads as `.webm` instead of `.mp4`?** Your browser lacks H.264 canvas recording (mostly Firefox).
-  Chrome, Edge and Safari produce MP4. WebM uploads fine to YouTube, TikTok and Instagram anyway.
-- **First image is slow?** Pollinations cold-starts at 15–40s. Later renders are much faster.
-- **AI motion says "engines busy"?** Free community GPUs are shared and genuinely run out. Retry in a few minutes,
-  or switch to the Cinematic camera engine for an instant result. There is no way to skip the queue without paying.
-- **Keep the tab visible while rendering video** — browsers throttle background tabs, which slows the capture.
-- **Dev server 500s after running `npm run build`?** The production build overwrites the `.next` folder the dev
-  server is watching. Fix: `rm -rf .next && npm run dev`.
-- **Rare "blocked pixel access" warning?** If your browser refuses direct access to the generated pixels, the app
-  still shows and downloads the image, but it can't be saved to the gallery or animated. Regenerating clears it.
+- **Video downloads as `.webm` instead of `.mp4`** — your browser lacks H.264
+  canvas recording (mostly Firefox). Chrome, Edge and Safari produce MP4. WebM
+  uploads fine to YouTube, TikTok and Instagram anyway.
+- **First image is slow** — Pollinations cold-starts at 15–40s. Later renders are
+  much faster.
+- **AI motion says "engines busy"** — free community GPUs are shared and genuinely
+  run out. Retry in a few minutes, or use the Cinematic camera engine for an
+  instant result.
+- **Keep the tab visible while rendering video** — browsers throttle background
+  tabs, which slows capture.
+- **Dev server 500s after `npm run build`** — the production build overwrites the
+  `.next` folder the dev server watches. Fix: `rm -rf .next && npm run dev`.
 
-## 📄 License
+## License
 
 MIT — do whatever you want with it, including commercial use.

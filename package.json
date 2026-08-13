@@ -1,28 +1,29 @@
 {
   "name": "tiny-workers-studio",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
-  "description": "Free unlimited AI generator for Tiny Workers / Cardboard Puzzle / Pixar style images and videos. No credits, no watermark, no login.",
+  "description": "Free, keyless AI generator for Tiny Workers / Cardboard Puzzle / Pixar style images and videos. Runs entirely in the browser.",
   "scripts": {
     "dev": "next dev -H 0.0.0.0 -p 3000",
     "build": "next build",
-    "start": "next start -H 0.0.0.0 -p 3000",
-    "lint": "next lint",
-    "build:static": "node scripts/build-static.mjs"
+    "start": "next start -H 0.0.0.0 -p 3000"
   },
   "dependencies": {
-    "@gradio/client": "^2.4.0",
-    "next": "14.2.5",
+    "@gradio/client": "2.5.0",
+    "next": "14.2.35",
     "react": "18.3.1",
     "react-dom": "18.3.1"
   },
   "devDependencies": {
-    "@types/node": "20.14.10",
+    "@types/node": "20.19.43",
     "@types/react": "18.3.3",
     "@types/react-dom": "18.3.0",
     "autoprefixer": "10.4.19",
-    "postcss": "8.4.39",
-    "tailwindcss": "3.4.6",
-    "typescript": "5.5.3"
+    "postcss": "8.5.26",
+    "tailwindcss": "3.4.19",
+    "typescript": "5.9.3"
+  },
+  "overrides": {
+    "postcss": "8.5.26"
   }
 }

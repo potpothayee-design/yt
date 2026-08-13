@@ -70,7 +70,7 @@ export const PRESETS: PromptPreset[] = [
     style: 'pixar',
     aspect: '9:16',
     prompt:
-      'The moment a flat stack of brown cardboard puzzle pieces on a child\'s bedroom floor magically springs to life and ' +
+      "The moment a flat stack of brown cardboard puzzle pieces on a child's bedroom floor magically springs to life and " +
       'self-assembles into a cheerful cardboard robot toy with big friendly eyes. Pieces float and snap together mid-air ' +
       'trailing golden sparkle dust, the robot stretches its arms and grins for the first time. Moonlight through the window, ' +
       'toy box and crayons in the background, Toy Story style wonder and warmth, magical rim lighting.',

@@ -1,24 +1,17 @@
-import { ASPECT_MAP, STYLE_MAP, type AspectId, type StyleId } from './styles'
+import { STYLE_MAP, type AspectId, type StyleId } from './styles'
 
 /**
  * Pollinations is a free, keyless, unlimited image endpoint.
- * We call it straight from the browser so there is no backend to rate limit,
- * no API key to leak, and the app still works as a pure static export.
+ * We call it straight from the browser, so there is no backend to rate-limit
+ * and no API key to leak.
  */
 const POLLINATIONS = 'https://image.pollinations.ai/prompt/'
 
-/** Models we can round-robin through if one is busy. */
+/** Models we round-robin through if one is busy. */
 export const IMAGE_MODELS = ['flux', 'turbo', 'flux-realism'] as const
 export type ImageModel = (typeof IMAGE_MODELS)[number]
 
-export interface BuildPromptArgs {
-  prompt: string
-  style: StyleId | null
-  /** Extra words appended after the style suffix. */
-  extra?: string
-}
-
-export function buildPrompt({ prompt, style, extra }: BuildPromptArgs): string {
+export function buildPrompt(prompt: string, style: StyleId | null, extra?: string): string {
   const parts = [prompt.trim()]
   if (style && STYLE_MAP[style]) parts.push(STYLE_MAP[style].suffix)
   if (extra?.trim()) parts.push(extra.trim())
@@ -26,17 +19,14 @@ export function buildPrompt({ prompt, style, extra }: BuildPromptArgs): string {
   return parts.filter(Boolean).join(', ')
 }
 
-export function negativeFor(style: StyleId | null): string {
+function negativeFor(style: StyleId | null): string {
   return style && STYLE_MAP[style]
     ? STYLE_MAP[style].negative
     : 'text, watermark, logo, lowres, blurry, deformed'
 }
 
-/**
- * Pollinations gets slow/unstable above ~1.5K on a side, so we render at a safe
- * "master" size and upscale to true 4K on the client during export.
- */
-function renderSizeFor(aspect: AspectId) {
+/** Master render size — Pollinations gets slow above ~1.5K a side; we upscale to 4K on export. */
+function renderSizeFor(aspect: AspectId): { width: number; height: number } {
   switch (aspect) {
     case '9:16':
       return { width: 864, height: 1536 }
@@ -56,6 +46,13 @@ export interface ImageUrlArgs {
   extra?: string
 }
 
+export interface ImageUrl {
+  url: string
+  finalPrompt: string
+  width: number
+  height: number
+}
+
 export function buildImageUrl({
   prompt,
   style,
@@ -63,8 +60,8 @@ export function buildImageUrl({
   seed,
   model = 'flux',
   extra,
-}: ImageUrlArgs): { url: string; finalPrompt: string; width: number; height: number } {
-  const finalPrompt = buildPrompt({ prompt, style, extra })
+}: ImageUrlArgs): ImageUrl {
+  const finalPrompt = buildPrompt(prompt, style, extra)
   const { width, height } = renderSizeFor(aspect)
   const qs = new URLSearchParams({
     width: String(width),
@@ -76,8 +73,7 @@ export function buildImageUrl({
     private: 'true',
     negative: negativeFor(style),
   })
-  const url = `${POLLINATIONS}${encodeURIComponent(finalPrompt)}?${qs.toString()}`
-  return { url, finalPrompt, width, height }
+  return { url: `${POLLINATIONS}${encodeURIComponent(finalPrompt)}?${qs.toString()}`, finalPrompt, width, height }
 }
 
 export function randomSeed(): number {
@@ -85,9 +81,8 @@ export function randomSeed(): number {
 }
 
 /**
- * Strategy A — fetch() into a Blob.
- * Best case: gives us a real Blob we can persist to IndexedDB and canvas-export
- * without tainting. Requires permissive CORS on the response.
+ * Strategy A — fetch() into a Blob. Requires permissive CORS (Pollinations sends it).
+ * Gives a real Blob we can persist and canvas-export without tainting.
  */
 async function viaFetch(url: string, timeoutMs: number): Promise<Blob> {
   const controller = new AbortController()
@@ -104,10 +99,8 @@ async function viaFetch(url: string, timeoutMs: number): Promise<Blob> {
 }
 
 /**
- * Strategy B — <img crossOrigin="anonymous"> then canvas.toBlob().
- * <img> loading is NOT subject to the same fetch CORS rules, so this still
- * works in cases where fetch() is rejected. If the server sends CORS headers
- * the canvas stays clean and we get a usable Blob back.
+ * Strategy B — <img crossOrigin="anonymous"> then canvas.toBlob(). <img> loading is
+ * not subject to the same fetch CORS rules, so this works where fetch() is rejected.
  */
 function viaImageCanvas(url: string, timeoutMs: number): Promise<Blob> {
   return new Promise((resolve, reject) => {
@@ -157,11 +150,9 @@ export interface ImageResult {
 }
 
 /**
- * Fetch an image, trying every engine and every transport before giving up.
- *
- * For each model we attempt fetch() first, then the <img>+canvas route. Only if
- * BOTH transports fail for ALL models do we fall back to handing back the raw
- * URL, so the user still sees their picture even in a hostile CORS environment.
+ * Fetch an image, trying every model and every transport before giving up.
+ * Only if both transports fail for all models do we fall back to the raw URL,
+ * so the user still sees their picture even in a hostile CORS environment.
  */
 export async function fetchImageBlob(
   args: ImageUrlArgs,
@@ -210,12 +201,7 @@ export async function fetchImageBlob(
       }
       img.src = lastUrl
     })
-    return {
-      blob: new Blob(),
-      ...lastMeta,
-      model: 'direct',
-      remoteUrl: lastUrl,
-    }
+    return { blob: new Blob(), ...lastMeta, model: 'direct', remoteUrl: lastUrl }
   } catch {
     /* fall through to the thrown error below */
   }

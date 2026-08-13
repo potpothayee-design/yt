@@ -43,12 +43,10 @@ export default function Header({
               <button
                 key={id}
                 onClick={() => setTab(id)}
-                className={`relative flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-[13px] font-semibold transition-all ${
-                  active
-                    ? 'bg-white/[0.10] text-white shadow-sm'
-                    : 'text-zinc-500 hover:text-zinc-200'
-                }`}
                 aria-current={active ? 'page' : undefined}
+                className={`relative flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-[13px] font-semibold transition-all ${
+                  active ? 'bg-white/[0.10] text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-200'
+                }`}
               >
                 <Icon width={15} height={15} />
                 <span className="hidden sm:inline">{label}</span>

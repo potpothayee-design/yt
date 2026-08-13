@@ -5,7 +5,7 @@ import type { GalleryItem } from '@/lib/types'
 import { ASPECT_MAP } from '@/lib/styles'
 import { copyText, downloadBlob, slugify, upscaleToBlob } from '@/lib/download'
 import { getBlob } from '@/lib/storage'
-import { IconCheck, IconCopy, IconDownload, IconTrash, IconClose } from './Icons'
+import { IconCheck, IconClose, IconCopy, IconDownload, IconTrash } from './Icons'
 import { useToast } from './Toast'
 
 type Filter = 'all' | 'image' | 'video'
@@ -113,13 +113,23 @@ export default function Gallery({
                 className={`relative block w-full ${ASPECT_MAP[item.aspect].ratioClass} overflow-hidden bg-black`}
               >
                 {item.kind === 'video' ? (
-                  <video src={item.url} muted loop playsInline className="h-full w-full object-cover"
+                  <video
+                    src={item.url}
+                    muted
+                    loop
+                    playsInline
+                    className="h-full w-full object-cover"
                     onMouseEnter={(e) => void (e.currentTarget as HTMLVideoElement).play().catch(() => {})}
                     onMouseLeave={(e) => (e.currentTarget as HTMLVideoElement).pause()}
                   />
                 ) : (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={item.url} alt={item.rawPrompt} loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]" />
+                  <img
+                    src={item.url}
+                    alt={item.rawPrompt}
+                    loading="lazy"
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                  />
                 )}
                 <span className="absolute left-1.5 top-1.5 rounded-md bg-black/70 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white backdrop-blur">
                   {item.kind === 'video' ? `▶ ${item.durationSec}s` : item.aspect}

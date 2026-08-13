@@ -22,8 +22,8 @@ export function downloadBlob(blob: Blob, filename: string): void {
 }
 
 /**
- * Upscale a generated image to true 4K on the client (high quality canvas
- * resample) so the PNG export matches the promised 4K resolution.
+ * Upscale an image to true 4K on the client (progressive high-quality canvas
+ * resample), so the PNG export matches the promised 4K resolution.
  */
 export async function upscaleToBlob(
   src: Blob | string,
@@ -40,9 +40,7 @@ export async function upscaleToBlob(
       i.src = url
     })
 
-    const target = ASPECT_MAP[aspect]
-    const W = target.width
-    const H = target.height
+    const { width: W, height: H } = ASPECT_MAP[aspect]
 
     // Progressive 2x steps preserve detail far better than one big jump.
     let cur = document.createElement('canvas')

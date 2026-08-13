@@ -1,14 +1,11 @@
-import { ASPECT_MAP, type AspectId } from './styles'
+import type { AspectId } from './styles'
 
 /**
  * Client-side cinematic video engine.
  *
- * Why client-side? Free hosted video models (Wan2.1, SVD, ...) are gated,
- * queued or cold-booting most of the time, so relying on them alone means the
- * app breaks exactly like the paid tools do. Instead we always have a guaranteed
- * renderer: we animate real camera moves over one or more AI keyframes on a
- * <canvas> and capture it with MediaRecorder into a real, downloadable video
- * file. No key, no queue, no credits, no watermark — it simply never fails.
+ * Animates real camera moves over one or more AI keyframes on a <canvas> and
+ * captures it with MediaRecorder into a real, downloadable video file. No key,
+ * no queue, no credits, no watermark — it simply never fails.
  */
 
 export type MotionId =
@@ -60,7 +57,7 @@ export interface RenderResult {
 }
 
 /** Output resolution — 1080x1920 / 1920x1080 keeps encoding realtime-fast. */
-function outputSize(aspect: AspectId) {
+function outputSize(aspect: AspectId): { width: number; height: number } {
   switch (aspect) {
     case '9:16':
       return { width: 1080, height: 1920 }
@@ -94,7 +91,7 @@ export function supportsRecording(): boolean {
   )
 }
 
-/** easeInOutCubic — gives moves that accelerate and settle like a real dolly. */
+/** easeInOutCubic — moves that accelerate and settle like a real dolly. */
 function ease(t: number): number {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
 }
@@ -167,7 +164,14 @@ function drawFrame(
 }
 
 function drawVignette(ctx: CanvasRenderingContext2D, W: number, H: number) {
-  const g = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.32, W / 2, H / 2, Math.max(W, H) * 0.75)
+  const g = ctx.createRadialGradient(
+    W / 2,
+    H / 2,
+    Math.min(W, H) * 0.32,
+    W / 2,
+    H / 2,
+    Math.max(W, H) * 0.75,
+  )
   g.addColorStop(0, 'rgba(0,0,0,0)')
   g.addColorStop(1, 'rgba(0,0,0,0.42)')
   ctx.save()
@@ -229,7 +233,6 @@ export async function renderVideo(opts: RenderOptions): Promise<RenderResult> {
   recorder.ondataavailable = (e) => {
     if (e.data && e.data.size) chunks.push(e.data)
   }
-
   const stopped = new Promise<void>((resolve) => {
     recorder.onstop = () => resolve()
   })
@@ -238,12 +241,11 @@ export async function renderVideo(opts: RenderOptions): Promise<RenderResult> {
   const grainPattern = grainTile ? ctx.createPattern(grainTile, 'repeat') : null
 
   const totalFrames = Math.max(1, Math.round(durationSec * fps))
-  // Keyframe crossfade: distribute all source images across the timeline.
   const segs = Math.max(1, images.length - 1)
 
   recorder.start()
   const frameMs = 1000 / fps
-  let start = performance.now()
+  const start = performance.now()
 
   for (let f = 0; f < totalFrames; f++) {
     if (signal?.aborted) {
@@ -272,7 +274,6 @@ export async function renderVideo(opts: RenderOptions): Promise<RenderResult> {
     if (motion === 'split-wipe') {
       const x = Math.round(ease(p) * W)
       ctx.save()
-      // Cool grade on the "before" side, warm on the "after" side.
       ctx.globalCompositeOperation = 'multiply'
       ctx.fillStyle = 'rgba(150,190,255,0.55)'
       ctx.fillRect(0, 0, x, H)
@@ -313,7 +314,7 @@ export async function renderVideo(opts: RenderOptions): Promise<RenderResult> {
 
     onProgress?.(Math.round((f / totalFrames) * 100))
 
-    // Pace the loop to real time so the recorder timestamps stay correct.
+    // Pace the loop to real time so recorder timestamps stay correct.
     const target = start + (f + 1) * frameMs
     const wait = target - performance.now()
     await new Promise((r) => setTimeout(r, wait > 0 ? wait : 0))

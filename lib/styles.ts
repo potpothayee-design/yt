@@ -57,10 +57,10 @@ export const STYLES: StylePreset[] = [
   },
 ]
 
-export const STYLE_MAP: Record<StyleId, StylePreset> = STYLES.reduce(
-  (acc, s) => ({ ...acc, [s.id]: s }),
-  {} as Record<StyleId, StylePreset>,
-)
+export const STYLE_MAP = Object.fromEntries(STYLES.map((s) => [s.id, s])) as Record<
+  StyleId,
+  StylePreset
+>
 
 export type AspectId = '9:16' | '16:9' | '1:1'
 
@@ -68,41 +68,19 @@ export interface AspectPreset {
   id: AspectId
   label: string
   hint: string
-  /** 4K-class render size (kept within model-friendly bounds, upscaled on export). */
+  /** True 4K export size (we render smaller and upscale on export). */
   width: number
   height: number
-  /** Tailwind ratio class for previews. */
   ratioClass: string
 }
 
 export const ASPECTS: AspectPreset[] = [
-  {
-    id: '9:16',
-    label: '9:16',
-    hint: 'Shorts / Reels / TikTok',
-    width: 2160,
-    height: 3840,
-    ratioClass: 'aspect-[9/16]',
-  },
-  {
-    id: '16:9',
-    label: '16:9',
-    hint: 'YouTube / Desktop',
-    width: 3840,
-    height: 2160,
-    ratioClass: 'aspect-video',
-  },
-  {
-    id: '1:1',
-    label: '1:1',
-    hint: 'Thumbnail / Post',
-    width: 2880,
-    height: 2880,
-    ratioClass: 'aspect-square',
-  },
+  { id: '9:16', label: '9:16', hint: 'Shorts / Reels / TikTok', width: 2160, height: 3840, ratioClass: 'aspect-[9/16]' },
+  { id: '16:9', label: '16:9', hint: 'YouTube / Desktop', width: 3840, height: 2160, ratioClass: 'aspect-video' },
+  { id: '1:1', label: '1:1', hint: 'Thumbnail / Post', width: 2880, height: 2880, ratioClass: 'aspect-square' },
 ]
 
-export const ASPECT_MAP: Record<AspectId, AspectPreset> = ASPECTS.reduce(
-  (acc, a) => ({ ...acc, [a.id]: a }),
-  {} as Record<AspectId, AspectPreset>,
-)
+export const ASPECT_MAP = Object.fromEntries(ASPECTS.map((a) => [a.id, a])) as Record<
+  AspectId,
+  AspectPreset
+>

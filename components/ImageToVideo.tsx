@@ -3,11 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ASPECTS, ASPECT_MAP, STYLES, type AspectId, type StyleId } from '@/lib/styles'
 import { fetchImageBlob, randomSeed } from '@/lib/pollinations'
-import { MOTIONS, loadImage, renderVideo, supportsRecording, type MotionId } from '@/lib/video'
+import { loadImage, renderVideo, supportsRecording, MOTIONS, type MotionId } from '@/lib/video'
 import { generateAiVideo } from '@/lib/aivideo'
 import { downloadBlob, slugify } from '@/lib/download'
 import type { GalleryItem } from '@/lib/types'
-import { IconDownload, IconSparkles, IconUpload, IconVideo, IconClose, IconPlus, IconBolt } from './Icons'
+import { IconBolt, IconClose, IconDownload, IconPlus, IconSparkles, IconUpload, IconVideo } from './Icons'
 import { useToast } from './Toast'
 
 type Engine = 'ai' | 'camera'
@@ -88,7 +88,7 @@ export default function ImageToVideo({
       if (remoteUrl) {
         // Without local pixel data the canvas would be tainted and the
         // recording would fail silently — better to say so up front.
-        toast('Your browser blocked pixel access for this render, so it can\u2019t be animated. Try again.', 'error')
+        toast("Your browser blocked pixel access for this render, so it can't be animated. Try again.", 'error')
         return
       }
       setSources((s) =>

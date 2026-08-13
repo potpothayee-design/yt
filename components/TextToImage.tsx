@@ -3,7 +3,7 @@
 import { useCallback, useRef, useState } from 'react'
 import { ASPECTS, ASPECT_MAP, STYLES, type AspectId, type StyleId } from '@/lib/styles'
 import { fetchImageBlob, randomSeed } from '@/lib/pollinations'
-import { downloadBlob, slugify, upscaleToBlob, copyText } from '@/lib/download'
+import { copyText, downloadBlob, slugify, upscaleToBlob } from '@/lib/download'
 import type { GalleryItem } from '@/lib/types'
 import {
   IconCheck,
@@ -53,7 +53,7 @@ export default function TextToImage({
   const [results, setResults] = useState<Result[]>([])
   const [copied, setCopied] = useState(false)
   const [exporting, setExporting] = useState<string | null>(null)
-  const [remoteNotice, setItemsRemoteNotice] = useState(false)
+  const [remoteNotice, setRemoteNotice] = useState(false)
   const abortRef = useRef(false)
   const toast = useToast()
 
@@ -109,9 +109,11 @@ export default function TextToImage({
         }
         // Only persist real pixel data; a remote-only result can't be stored.
         if (!remoteUrl) onSaved(item, blob)
-        else setItemsRemoteNotice(true)
+        else setRemoteNotice(true)
       }
-      if (made.length) toast(`${made.length} image${made.length > 1 ? 's' : ''} ready — saved to gallery`, 'success')
+      if (made.length) {
+        toast(`${made.length} image${made.length > 1 ? 's' : ''} ready — saved to gallery`, 'success')
+      }
     } catch (err) {
       toast(err instanceof Error ? err.message : 'Generation failed. Try again — it is always free.', 'error')
     } finally {
@@ -379,7 +381,7 @@ export default function TextToImage({
                   <button
                     onClick={() => {
                       if (r.remote) {
-                        toast('This render can\u2019t be animated — regenerate it first.', 'error')
+                        toast("This render can't be animated — regenerate it first.", 'error')
                         return
                       }
                       onAnimate(r.url, prompt, aspect)
